@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mysql://${MYBOX_ENDPOINT}/mybox?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://database-mybox.cfcxi9y69a7y.ap-northeast-2.rds.amazonaws.com/mybox?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: admin
-    password: ${MYBOX_PASSWORD}
+    password: myboxmybox
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     database: mysql
