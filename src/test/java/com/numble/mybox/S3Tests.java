@@ -10,7 +10,10 @@ import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import java.io.ByteArrayInputStream;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -93,6 +96,43 @@ public class S3Tests {
             for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
                 System.out.println("    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner=" + objectSummary.getOwner().getId());
             }
+        } catch (AmazonS3Exception e) {
+            e.printStackTrace();
+        } catch(SdkClientException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void createFolderTest() {
+        // create folder
+        String folderName = "sample-folder/";
+
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        objectMetadata.setContentLength(0L);
+        objectMetadata.setContentType("application/x-directory");
+        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, folderName, new ByteArrayInputStream(new byte[0]), objectMetadata);
+
+        try {
+            s3.putObject(putObjectRequest);
+            System.out.format("Folder %s has been created.\n", folderName);
+        } catch (AmazonS3Exception e) {
+            e.printStackTrace();
+        } catch(SdkClientException e) {
+            e.printStackTrace();
+        }
+
+        // create folder under folder
+        folderName = "폴더1/depth-2/";
+
+        objectMetadata = new ObjectMetadata();
+        objectMetadata.setContentLength(0L);
+        objectMetadata.setContentType("application/x-directory");
+        putObjectRequest = new PutObjectRequest(bucketName, folderName, new ByteArrayInputStream(new byte[0]), objectMetadata);
+
+        try {
+            s3.putObject(putObjectRequest);
+            System.out.format("Folder %s has been created.\n", folderName);
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
         } catch(SdkClientException e) {
