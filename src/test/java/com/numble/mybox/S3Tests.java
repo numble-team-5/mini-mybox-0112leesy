@@ -14,6 +14,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +29,8 @@ public class S3Tests {
     // S3 client
     final AmazonS3 s3 = AmazonS3ClientBuilder.standard()
         .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endPoint, regionName))
-        .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
+        .withCredentials(
+            new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
         .build();
 
     @Test
@@ -61,7 +63,9 @@ public class S3Tests {
             System.out.println("Object List:");
             while (true) {
                 for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-                    System.out.println("    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner=" + objectSummary.getOwner().getId());
+                    System.out.println(
+                        "    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize()
+                            + ", owner=" + objectSummary.getOwner().getId());
                 }
 
                 if (objectListing.isTruncated()) {
@@ -94,11 +98,13 @@ public class S3Tests {
 
             System.out.println("File List:");
             for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-                System.out.println("    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner=" + objectSummary.getOwner().getId());
+                System.out.println(
+                    "    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize()
+                        + ", owner=" + objectSummary.getOwner().getId());
             }
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
-        } catch(SdkClientException e) {
+        } catch (SdkClientException e) {
             e.printStackTrace();
         }
     }
@@ -111,14 +117,15 @@ public class S3Tests {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentLength(0L);
         objectMetadata.setContentType("application/x-directory");
-        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, folderName, new ByteArrayInputStream(new byte[0]), objectMetadata);
+        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, folderName,
+            new ByteArrayInputStream(new byte[0]), objectMetadata);
 
         try {
             s3.putObject(putObjectRequest);
             System.out.format("Folder %s has been created.\n", folderName);
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
-        } catch(SdkClientException e) {
+        } catch (SdkClientException e) {
             e.printStackTrace();
         }
 
@@ -128,11 +135,28 @@ public class S3Tests {
         objectMetadata = new ObjectMetadata();
         objectMetadata.setContentLength(0L);
         objectMetadata.setContentType("application/x-directory");
-        putObjectRequest = new PutObjectRequest(bucketName, folderName, new ByteArrayInputStream(new byte[0]), objectMetadata);
+        putObjectRequest = new PutObjectRequest(bucketName, folderName,
+            new ByteArrayInputStream(new byte[0]), objectMetadata);
 
         try {
             s3.putObject(putObjectRequest);
             System.out.format("Folder %s has been created.\n", folderName);
+        } catch (AmazonS3Exception e) {
+            e.printStackTrace();
+        } catch (SdkClientException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void uploadFileTest() {
+        // upload local file
+        String objectName = "sample-object.txt";
+        String filePath = "C:\\Users\\LGgram\\Desktop\\test1.txt";
+
+        try {
+            s3.putObject(bucketName, objectName, new File(filePath));
+            System.out.format("Object %s has been created.\n", objectName);
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
         } catch(SdkClientException e) {
