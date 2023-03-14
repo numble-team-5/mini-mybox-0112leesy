@@ -73,4 +73,31 @@ public class S3Tests {
         }
     }
 
+    @Test
+    public void getRootObjectTest() {
+        // top level folders and files in the bucket
+        try {
+            ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                .withBucketName(bucketName)
+                .withDelimiter("/")
+                .withMaxKeys(300);
+
+            ObjectListing objectListing = s3.listObjects(listObjectsRequest);
+
+            System.out.println("Folder List:");
+            for (String commonPrefixes : objectListing.getCommonPrefixes()) {
+                System.out.println("    name=" + commonPrefixes);
+            }
+
+            System.out.println("File List:");
+            for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                System.out.println("    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner=" + objectSummary.getOwner().getId());
+            }
+        } catch (AmazonS3Exception e) {
+            e.printStackTrace();
+        } catch(SdkClientException e) {
+            e.printStackTrace();
+        }
+    }
+
 }
