@@ -84,6 +84,57 @@ public class S3Tests {
     }
 
     @Test
+    public void deleteBucketTest() {
+        String bucketName = "b7bf8e10-73f2-4a9c-bc17-8c24aaa7d5b7";
+
+        try {
+            // delete bucket if the bucket exists
+            if (s3.doesBucketExistV2(bucketName)) {
+                // delete all objects
+                ObjectListing objectListing = s3.listObjects(bucketName);
+                while (true) {
+                    for (Iterator<?> iterator = objectListing.getObjectSummaries().iterator(); iterator.hasNext();) {
+                        S3ObjectSummary summary = (S3ObjectSummary)iterator.next();
+                        s3.deleteObject(bucketName, summary.getKey());
+                    }
+
+                    if (objectListing.isTruncated()) {
+                        objectListing = s3.listNextBatchOfObjects(objectListing);
+                    } else {
+                        break;
+                    }
+                }
+
+                // abort incomplete multipart uploads
+                MultipartUploadListing multipartUploadListing = s3.listMultipartUploads(new ListMultipartUploadsRequest(bucketName));
+                while (true) {
+                    for (Iterator<?> iterator = multipartUploadListing.getMultipartUploads().iterator(); iterator.hasNext();) {
+                        MultipartUpload multipartUpload = (MultipartUpload)iterator.next();
+                        s3.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, multipartUpload.getKey(), multipartUpload.getUploadId()));
+                    }
+
+                    if (multipartUploadListing.isTruncated()) {
+                        ListMultipartUploadsRequest listMultipartUploadsRequest = new ListMultipartUploadsRequest(bucketName);
+                        listMultipartUploadsRequest.withUploadIdMarker(multipartUploadListing.getNextUploadIdMarker());
+                        multipartUploadListing = s3.listMultipartUploads(listMultipartUploadsRequest);
+                    } else {
+                        break;
+                    }
+                }
+
+                s3.deleteBucket(bucketName);
+                System.out.format("Bucket %s has been deleted.\n", bucketName);
+            } else {
+                System.out.format("Bucket %s does not exist.\n", bucketName);
+            }
+        } catch (AmazonS3Exception e) {
+            e.printStackTrace();
+        } catch(SdkClientException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
     public void getAllObjectTest() {
         // list all in the bucket
         try {
