@@ -6,9 +6,13 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.ListMultipartUploadsRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.MultipartUpload;
+import com.amazonaws.services.s3.model.MultipartUploadListing;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
@@ -22,7 +26,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 public class S3Tests {
@@ -53,6 +59,26 @@ public class S3Tests {
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
         } catch (SdkClientException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void putBucketTest() {
+        // generate unique bucket names using UUID
+        String newBucketName = UUID.randomUUID().toString();
+
+        try {
+            // create bucket if the bucket name does not exist
+            if (s3.doesBucketExistV2(newBucketName)) {
+                System.out.format("Bucket %s already exists.\n", newBucketName);
+            } else {
+                s3.createBucket(newBucketName);
+                System.out.format("Bucket %s has been created.\n", newBucketName);
+            }
+        } catch (AmazonS3Exception e) {
+            e.printStackTrace();
+        } catch(SdkClientException e) {
             e.printStackTrace();
         }
     }
