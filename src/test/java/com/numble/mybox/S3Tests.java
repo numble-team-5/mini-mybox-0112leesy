@@ -26,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -251,11 +252,15 @@ public class S3Tests {
     @Test
     public void uploadImageFileTest() {
         // upload local file
+        // if the file already exists, it is overwritten
         String objectName = "sample-image-object.jpg";
         String filePath = "C:\\Users\\LGgram\\Desktop\\testImage1.jpeg";
 
         try {
-            s3.putObject(bucketName, objectName, new File(filePath));
+            File file = new File(filePath);
+            s3.putObject(bucketName, objectName, file);
+            double fileSize = file.length() / 1024.0 / 1024.0;
+            System.out.format("File size : %.2f mb\n", fileSize);
             System.out.format("Object %s has been created.\n", objectName);
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
