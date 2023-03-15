@@ -300,6 +300,41 @@ public class S3Tests {
     }
 
     @Test
+    public void downloadImageFileTest() {
+        String objectName = "폴더1/맑은 날 한강.jpeg";
+        String downloadFilePath = "C:\\Users\\LGgram\\Desktop\\image-download.jpeg";
+
+        // download object
+        try {
+            S3Object s3Object = s3.getObject(bucketName, objectName);
+            S3ObjectInputStream s3ObjectInputStream = s3Object.getObjectContent();
+
+            OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(downloadFilePath));
+            byte[] bytesArray = new byte[4096];
+            int bytesRead = -1;
+            while ((bytesRead = s3ObjectInputStream.read(bytesArray)) != -1) {
+                outputStream.write(bytesArray, 0, bytesRead);
+            }
+
+            outputStream.close();
+            s3ObjectInputStream.close();
+            System.out.format("Object %s has been downloaded.\n", objectName);
+        } catch (AmazonS3Exception e) {
+            System.out.println("AmazonS3Exception");
+            e.printStackTrace();
+        } catch(SdkClientException e) {
+            System.out.println("SdkClientException");
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            System.out.println("FileNotFoundException");
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            System.out.println("IOException");
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
     public void deleteFileTest() {
         String objectName = "sample-object.txt";
 
