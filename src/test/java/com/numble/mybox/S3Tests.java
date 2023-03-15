@@ -12,9 +12,16 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -157,6 +164,21 @@ public class S3Tests {
         try {
             s3.putObject(bucketName, objectName, new File(filePath));
             System.out.format("Object %s has been created.\n", objectName);
+        } catch (AmazonS3Exception e) {
+            e.printStackTrace();
+        } catch(SdkClientException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void deleteFileTest() {
+        String objectName = "sample-object.txt";
+
+        // delete object
+        try {
+            s3.deleteObject(bucketName, objectName);
+            System.out.format("Object %s has been deleted.\n", objectName);
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
         } catch(SdkClientException e) {
