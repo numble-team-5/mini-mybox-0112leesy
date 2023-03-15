@@ -233,10 +233,26 @@ public class S3Tests {
     }
 
     @Test
-    public void uploadFileTest() {
+    public void uploadTextFileTest() {
         // upload local file
         String objectName = "sample-object.txt";
         String filePath = "C:\\Users\\LGgram\\Desktop\\test1.txt";
+
+        try {
+            s3.putObject(bucketName, objectName, new File(filePath));
+            System.out.format("Object %s has been created.\n", objectName);
+        } catch (AmazonS3Exception e) {
+            e.printStackTrace();
+        } catch(SdkClientException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void uploadImageFileTest() {
+        // upload local file
+        String objectName = "sample-image-object.jpg";
+        String filePath = "C:\\Users\\LGgram\\Desktop\\testImage1.jpeg";
 
         try {
             s3.putObject(bucketName, objectName, new File(filePath));
