@@ -36,8 +36,8 @@ public class S3Tests {
 
     final String endPoint = "https://kr.object.ncloudstorage.com";
     final String regionName = "kr-standard";
-    final String accessKey = "${ACCESS_KEY}";
-    final String secretKey = "${SECRET_KEY}";
+    final String accessKey = System.getenv("NCP_ACCESS_KEY");
+    final String secretKey = System.getenv("NCP_SECRET_KEY");
     final String bucketName = "mybox-test";
 
     // S3 client
