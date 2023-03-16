@@ -36,8 +36,8 @@ public class S3Tests {
 
     final String endPoint = "https://kr.object.ncloudstorage.com";
     final String regionName = "kr-standard";
-    final String accessKey = "9Pzg3ZVTiF5OJQiAz6JI";
-    final String secretKey = "tx3kg9Dwaam8RWClQh7EXmq9sSRJODOoSzVYJmXg";
+    final String accessKey = "${ACCESS_KEY}";
+    final String secretKey = "${SECRET_KEY}";
     final String bucketName = "mybox-test";
 
     // S3 client
