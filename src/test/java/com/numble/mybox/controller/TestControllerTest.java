@@ -1,4 +1,4 @@
-package com.numble.mybox;
+package com.numble.mybox.controller;
 
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
