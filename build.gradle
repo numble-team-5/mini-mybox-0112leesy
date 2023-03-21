@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '2.7.9'
 	id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+	id "org.asciidoctor.jvm.convert" version "3.3.2" //(1) asciidoctor 추가
 }
 
 group = 'com.numble'
@@ -28,6 +29,44 @@ dependencies {
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc' //(2) mockMvc에서 restdocs를 사용할 수 있도록 추가
+}
+
+ext {
+	snippetsDir = file('build/generated-snippets')	//(3) 빌드시 snippets 파일들이 저장될 저장소
+}
+
+test {
+	useJUnitPlatform()
+	outputs.dir snippetsDir	//(4) test 실행 시 파일을 (3)에서 설정한 저장소에 출력하도록 설정
+}
+
+asciidoctor {	//(5) asccidoctor 설정
+	dependsOn test
+	inputs.dir snippetsDir
+}
+
+asciidoctor.doFirst {	//(6) asciidoctor가 실행될 때 docs 하위 파일 삭제
+	delete file('src/main/resources/static/docs')
+}
+
+bootJar {	//(7) bootJar 시 asciidoctor 종속되고 build하위 스니펫츠 파일을 classes 하위로 복사
+	dependsOn asciidoctor
+	copy {
+		from "${asciidoctor.outputDir}"
+		into 'BOOT-INF/classes/static/docs'
+	}
+}
+
+task copyDocument(type: Copy) {		//(8) from의 파일을 into로 복사
+	dependsOn asciidoctor
+	from file("build/docs/asciidoc")
+	into file("src/main/resources/static/docs")
+}
+
+build {		//(9) build 시 copyDocument 실행
+	dependsOn copyDocument
 }
 
 tasks.named('test') {
