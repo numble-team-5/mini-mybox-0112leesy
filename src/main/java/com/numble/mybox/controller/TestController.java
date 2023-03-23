@@ -26,4 +26,19 @@ public class TestController {
     public ResponseEntity restDocs(@RequestBody RestDocsDto restDocsDto) {
         return ResponseEntity.status(HttpStatus.OK).body(restDocsDto);
     }
+
+    @GetMapping(value = "/api/for-user")
+    public String getUserPage() {
+        return "USER PAGE";
+    }
+
+    @GetMapping(value = "/api/for-admin")
+    public String getAdminPage() {
+        return "ADMIN_PAGE";
+    }
+
+    @GetMapping(value = "/api/for-public")
+    public String getPublicPage() {
+        return "PUBLIC_PAGE";
+    }
 }
