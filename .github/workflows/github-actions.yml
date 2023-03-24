@@ -72,7 +72,7 @@ jobs:
     steps:
     - name: Docker run
       run: |
-            docker login -u ${{ secrets.USERNAME }} -p ${{ secrets.PASSWORD }}
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
             docker stop ${{ secrets.DOCKER_REPO }} && docker rm ${{ secrets.DOCKER_REPO }} && docker rmi ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}
             # docker run -d -p 8080:8080 --name spring-cicd --restart always lusida0131/spring-cicd:latest
             docker run -d --name ${{ secrets.DOCKER_REPO }} -p 80:8080 --restart always -e MYBOX_PASSWORD=${{ secrets.MYBOX_PASSWORD }} -e NCP_ACCESS_KEY=${{ secrets.NCP_ACCESS_KEY }} -e NCP_SECRET_KEY=${{ secrets.NCP_SECRET_KEY }} -e JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}
