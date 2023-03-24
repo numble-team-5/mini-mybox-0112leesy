@@ -20,15 +20,69 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
+    
     steps:
+    ## jdk setting
     - uses: actions/checkout@v3
     - name: Set up JDK 11
       uses: actions/setup-java@v3
       with:
         java-version: '11'
         distribution: 'temurin'
-    - name: Build with Gradle
-      uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
+        
+    ## gradle caching
+    - name: Gradle Caching
+      uses: actions/cache@v3
       with:
-        arguments: build
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    ## create application.yml -> docker container의 환경변수 사용 예정이라 제외
+          
+    ## gradle build
+    - name: Build with Gradle
+      run: ./gradlew build -x test -x ktlintCheck -x ktlintTestSourceSetCheck -x ktlintMainSourceSetCheck -x ktlintKotlinScriptCheck
+#       uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
+#       with:
+#         arguments: build
+
+    ## docker build & push
+    - name: Docker build & push
+      if: contains(github.ref, 'main')
+      run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker build -t ${{ secrets.DOCKER_REPO }} .
+          docker push ${{ secrets.DOCKER_REPO }}
+          
+          
+  deploy:
+    needs: build
+    name: Deploy
+    runs-on: [ self-hosted, label-go ] # AWS ./configure에서 사용할 label명
+    ## deploy
+    steps:
+    - name: Docker run
+      run: |
+            docker login -u ${{ secrets.USERNAME }} -p ${{ secrets.PASSWORD }}
+            docker stop ${{ secrets.DOCKER_REPO }} && docker rm ${{ secrets.DOCKER_REPO }} && docker rmi ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}
+            # docker run -d -p 8080:8080 --name spring-cicd --restart always lusida0131/spring-cicd:latest
+            docker run -d -p 80:8080 -e MYBOX_PASSWORD=${{ secrets.MYBOX_PASSWORD }} -e NCP_ACCESS_KEY=${{ secrets.NCP_ACCESS_KEY }} -e NCP_SECRET_KEY=${{ secrets.NCP_SECRET_KEY }} -e JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}
+#       uses: appleboy/ssh-action@master
+#       id: deploy
+#       if: contains(github.ref, 'main')
+#       with:
+#           host: ${{ secrets.HOST }}
+#           username: ec2-user
+#           key: ${{ secrets.PRIVATE_KEY }}
+#           envs: GITHUB_SHA
+#           script: |
+#               sudo docker rm -f $(docker ps -qa)
+#               sudo docker pull ${{ secrets.DOCKER_REPO }}/dotoriham-prod
+#               docker-compose up -d
+#               docker image prune -f
+
+      
