@@ -42,6 +42,10 @@ jobs:
           ${{ runner.os }}-gradle-
           
     ## create application.yml -> docker container의 환경변수 사용 예정이라 제외
+    
+    ## 빌드 권한 부여
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
           
     ## gradle build
     - name: Build with Gradle
