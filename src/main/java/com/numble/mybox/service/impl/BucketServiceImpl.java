@@ -3,6 +3,7 @@ package com.numble.mybox.service.impl;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.numble.mybox.data.dto.BucketResponseDto;
 import com.numble.mybox.data.entity.Bucket;
 import com.numble.mybox.data.repository.BucketRepository;
 import com.numble.mybox.service.BucketService;
@@ -35,9 +36,10 @@ public class BucketServiceImpl implements BucketService {
                 throw new RuntimeException();
             } else {
                 amazonS3.createBucket(bucketName);
-                Bucket bucket = new Bucket();
-                bucket.setBucketName(bucketName);
-                bucket.setRemain(30.0);
+                Bucket bucket = Bucket.builder()
+                    .bucketName(bucketName)
+                    .remain(30.0)
+                    .build();
                 bucketRepository.save(bucket);
                 LOGGER.info(String.format("Bucket [%s] has been created.\n", bucketName));
             }
@@ -50,7 +52,8 @@ public class BucketServiceImpl implements BucketService {
     }
 
     @Override
-    public void assignBucket(String username, String bucketName) throws RuntimeException {
+    public BucketResponseDto assignBucket(String username, String bucketName) throws RuntimeException {
+        BucketResponseDto bucketResponseDto = new BucketResponseDto();
         try {
             if (!amazonS3.doesBucketExistV2(bucketName)) {
                 LOGGER.info(String.format("Bucket [%s] not found.\n", bucketName));
@@ -58,14 +61,18 @@ public class BucketServiceImpl implements BucketService {
             } else {
                 Bucket bucket = bucketRepository.getByBucketName(bucketName);
                 bucket.setUsername(username);
-                bucketRepository.save(bucket);
+                Bucket savedBucket = bucketRepository.save(bucket);
                 LOGGER.info(String.format("Bucket [%s] assigned to User [%s].\n", bucketName, username));
+                bucketResponseDto.setBucketName(savedBucket.getBucketName());
+                bucketResponseDto.setUsername(savedBucket.getUsername());
+                bucketResponseDto.setRemain(savedBucket.getRemain());
             }
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
         } catch(SdkClientException e) {
             e.printStackTrace();
         }
+        return bucketResponseDto;
     }
 
 }

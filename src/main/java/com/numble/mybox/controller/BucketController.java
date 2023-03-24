@@ -26,12 +26,7 @@ public class BucketController {
     @PostMapping(value = "/bucket")
     public BucketResponseDto assignNewBucket(@RequestParam String username) throws RuntimeException {
         String bucketName = bucketService.createBucket();
-        bucketService.assignBucket(username, bucketName);
-        BucketResponseDto bucketResponseDto = BucketResponseDto.builder()
-            .username(username)
-            .bucketName(bucketName)
-            .remain(30.0)
-            .build();
+        BucketResponseDto bucketResponseDto = bucketService.assignBucket(username, bucketName);
         LOGGER.info("[assignNewBucket] Bucket [{}]를 생성하여 User {} 에 등록하였습니다.", bucketName, username);
         return bucketResponseDto;
     }
