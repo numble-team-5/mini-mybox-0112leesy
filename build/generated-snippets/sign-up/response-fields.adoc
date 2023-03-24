@@ -1,0 +1,16 @@
+|===
+|Path|Type|Description
+
+|`+success+`
+|`+Boolean+`
+|성공여부
+
+|`+code+`
+|`+Number+`
+|코드
+
+|`+msg+`
+|`+String+`
+|메시지
+
+|===

@@ -1,0 +1,10 @@
+[source,bash]
+----
+$ curl 'http://api:8081/user' -i -X POST \
+    -H 'Content-Type: application/json;charset=UTF-8' \
+    -d '{
+  "username" : "user",
+  "password" : "pass",
+  "email" : "email"
+}'
+----

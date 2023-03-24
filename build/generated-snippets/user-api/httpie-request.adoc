@@ -1,0 +1,9 @@
+[source,bash]
+----
+$ echo '{
+  "username" : "user",
+  "password" : "pass",
+  "email" : "email"
+}' | http POST 'http://api:8081/user' \
+    'Content-Type:application/json;charset=UTF-8'
+----

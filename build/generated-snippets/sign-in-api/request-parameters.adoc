@@ -1,0 +1,10 @@
+|===
+|Parameter|Description
+
+|`+username+`
+|아이디
+
+|`+password+`
+|비밀번호
+
+|===

@@ -1,0 +1,16 @@
+|===
+|Parameter|Description
+
+|`+username+`
+|아이디
+
+|`+password+`
+|비밀번호
+
+|`+email+`
+|이메일
+
+|`+role+`
+|권한
+
+|===

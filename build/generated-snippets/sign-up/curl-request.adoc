@@ -1,0 +1,4 @@
+[source,bash]
+----
+$ curl 'http://api:8081/sign-api/sign-up?username=test-username&password=test-password&email=test-email&role=user' -i -X POST
+----
