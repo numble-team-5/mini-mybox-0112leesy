@@ -17,11 +17,11 @@ public class Bucket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column
     private String username;
 
-    @Column(unique = true)
-    private String bucket;
+    @Column(nullable = false, unique = true)
+    private String bucketName;
 
     @Column(nullable = false)
     private Double remain;
