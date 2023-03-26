@@ -1,0 +1,26 @@
+ifndef::snippets[]
+:snippets: ./build/generated-snippets
+endif::[]
+
+= mini-MYBOX API
+:toc: left
+:toclevels: 4
+:toc-title: mini-mybox api
+
+== API TEST
+
+=== REQUEST
+
+include::{snippets}/sign-in-api/http-request.adoc[]
+
+=== REQEUST PARAMETER
+
+include::{snippets}/sign-in-api/request-parameters.adoc[]
+
+=== RESPONSE
+
+include::{snippets}/sign-in-api/http-response.adoc[]
+
+=== RESPONSE FIELD
+
+include::{snippets}/sign-in-api/response-fields.adoc[]
