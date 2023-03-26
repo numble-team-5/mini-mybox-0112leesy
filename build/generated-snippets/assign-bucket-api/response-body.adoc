@@ -1,0 +1,8 @@
+[source,options="nowrap"]
+----
+{
+  "username" : "test-user",
+  "bucketName" : "newBucketName",
+  "remain" : 30.0
+}
+----

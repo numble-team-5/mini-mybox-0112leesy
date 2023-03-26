@@ -136,7 +136,8 @@ public class S3Tests {
     }
 
     @Test
-    public void getAllObjectTest() {
+    public void
+    getAllObjectTest() {
         // list all in the bucket
         try {
             ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
@@ -172,6 +173,7 @@ public class S3Tests {
             ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
                 .withBucketName(bucketName)
                 .withDelimiter("/")
+                .withPrefix(null)
                 .withMaxKeys(300);
 
             ObjectListing objectListing = s3.listObjects(listObjectsRequest);
@@ -236,7 +238,7 @@ public class S3Tests {
     @Test
     public void uploadTextFileTest() {
         // upload local file
-        String objectName = "sample-object.txt";
+        String objectName = "sample-folder/sample-object.txt";
         String filePath = "C:\\Users\\LGgram\\Desktop\\test1.txt";
 
         try {

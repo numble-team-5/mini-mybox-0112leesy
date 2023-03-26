@@ -1,0 +1,4 @@
+[source,bash]
+----
+$ curl 'http://api:8081/bucket-api/bucket?username=test-user' -i -X POST
+----
