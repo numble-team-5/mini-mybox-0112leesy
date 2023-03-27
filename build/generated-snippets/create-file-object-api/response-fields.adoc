@@ -1,0 +1,32 @@
+|===
+|Path|Type|Description
+
+|`+id+`
+|`+Number+`
+|인덱스
+
+|`+name+`
+|`+String+`
+|파일 이름
+
+|`+parentFullName+`
+|`+Null+`
+|상위 폴더 경로
+
+|`+fullName+`
+|`+String+`
+|전체 경로
+
+|`+bucketName+`
+|`+String+`
+|버킷 이름
+
+|`+size+`
+|`+Number+`
+|용량
+
+|`+isFolder+`
+|`+Boolean+`
+|폴더 여부
+
+|===

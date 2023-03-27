@@ -1,0 +1,12 @@
+[source,options="nowrap"]
+----
+{
+  "id" : 1,
+  "fullName" : "testImage1.jpeg",
+  "parentFullName" : null,
+  "name" : "testImage1.jpeg",
+  "bucketName" : "test-bucket",
+  "size" : 2.3,
+  "isFolder" : false
+}
+----

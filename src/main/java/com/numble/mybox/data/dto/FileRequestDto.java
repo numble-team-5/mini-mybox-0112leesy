@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileRequestDto {
 
     private MultipartFile multipartFile;
-    private ObjectRequestDto objectRequestDto;
+    private String bucketName;
+    private String parentFullName;
 
 }

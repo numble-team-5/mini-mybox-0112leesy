@@ -98,30 +98,28 @@ public class ObjectServiceImpl implements ObjectService {
         String contentType = multipartFile.getContentType();
         String fileName = Normalizer.normalize(multipartFile.getOriginalFilename(), Normalizer.Form.NFC);
 
-        // byte[] file = ImageUtils.compressImage(fileRequestDto.getMultipartFile().getBytes());
-        ObjectRequestDto objectRequestDto = fileRequestDto.getObjectRequestDto();
-
+        // byte[] file = ImageUtils.compressImage(fileRequestDto.getMultipartFile().getBytes())
         String fullName = fileName;
-        if(objectRequestDto.getParentFullName() != null) {
-            fullName = objectRequestDto.getParentFullName() + fullName;
+        if(fileRequestDto.getParentFullName() != null) {
+            fullName = fileRequestDto.getParentFullName() + fullName;
         }
 
         ObjectMetadata objectMetadata = new ObjectMetadata();
         // long fileSize = file.length;
         long fileSize = multipartFile.getSize();
-        System.out.format("Object %s has been created.\n", objectRequestDto.getName());
+        System.out.format("Object %s has been created.\n", fileName);
         objectMetadata.setContentLength(fileSize);
         double fileSizeMb = fileSize / 1024.0 / 1024.0;
         System.out.format("File size : %.2f mb\n", fileSizeMb);
         objectMetadata.setContentType(contentType);
 
-        PutObjectRequest putObjectRequest = new PutObjectRequest(objectRequestDto.getBucketName(),
+        PutObjectRequest putObjectRequest = new PutObjectRequest(fileRequestDto.getBucketName(),
             fullName, multipartFile.getInputStream(), objectMetadata);
 
 
         try {
             amazonS3.putObject(putObjectRequest);
-            System.out.format("Object %s has been created.\n", objectRequestDto.getName());
+            System.out.format("Object %s has been created.\n", fileName);
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
         } catch (SdkClientException e) {
@@ -129,11 +127,11 @@ public class ObjectServiceImpl implements ObjectService {
         }
 
         Object newFile = Object.builder()
-            .bucketName(objectRequestDto.getBucketName())
+            .bucketName(fileRequestDto.getBucketName())
             .name(fileName)
             .size(fileSizeMb)
             .fullName(fullName)
-            .parentFullName(objectRequestDto.getParentFullName())
+            .parentFullName(fileRequestDto.getParentFullName())
             .isFolder(false)
             .build();
 

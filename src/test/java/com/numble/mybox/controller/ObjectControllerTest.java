@@ -12,8 +12,11 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.partWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
+import static org.springframework.restdocs.request.RequestDocumentation.requestParts;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -21,9 +24,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.numble.mybox.data.dto.FileRequestDto;
 import com.numble.mybox.data.dto.ObjectRequestDto;
 import com.numble.mybox.data.entity.Object;
 import com.numble.mybox.service.impl.ObjectServiceImpl;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -34,6 +40,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -145,8 +152,6 @@ class ObjectControllerTest {
             .isFolder(true)
             .build();
 
-        System.out.println(newFolder.toString());
-
         given(objectService.createFolder(objectRequestDto)).willReturn(newFolder);
 
         // when
@@ -191,6 +196,70 @@ class ObjectControllerTest {
     }
 
     @Test
-    void createFile() {
+    @DisplayName("파일 생성 테스트")
+    void createFile() throws Exception {
+        // given
+        String bucketName = "test-bucket";
+        String originalFilename = "testImage1.jpeg";
+        MockMultipartFile file = new MockMultipartFile("multipartFile",
+            originalFilename,
+            "image/jpg",
+            new FileInputStream("src/test/resources/"+originalFilename));
+
+        FileRequestDto fileRequestDto = FileRequestDto.builder()
+            .bucketName(bucketName)
+            .multipartFile(file)
+            .build();
+
+        Object newFile = Object.builder()
+            .id(1L)
+            .name(originalFilename)
+            .parentFullName(null)
+            .fullName(originalFilename)
+            .bucketName(bucketName)
+            .size(2.3)
+            .isFolder(false)
+            .build();
+
+        given(objectService.createFile(fileRequestDto)).willReturn(newFile);
+
+        // when
+        ResultActions actions = mockMvc.perform(
+            multipart("/object-api/file").file(file)
+                    .param("bucketName", bucketName));
+
+        // then
+        actions.andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").exists())
+            .andExpect(jsonPath("$.name").exists())
+            .andExpect(jsonPath("$.parentFullName").value(nullValue()))
+            .andExpect(jsonPath("$.fullName").value(originalFilename))
+            .andExpect(jsonPath("$.bucketName").exists())
+            .andExpect(jsonPath("$.size").exists())
+            .andExpect(jsonPath("$.isFolder").exists())
+            .andDo(print());
+
+        verify(objectService).createFile(fileRequestDto);
+
+        // docs
+        actions.andDo(document("create-file-object-api",
+            preprocessRequest(prettyPrint()),
+            preprocessResponse(prettyPrint()),
+            requestParts(
+                partWithName("multipartFile").description("이미지 파일")
+            ),
+            requestParameters(
+                parameterWithName("bucketName").description("버킷 이름")
+            ),
+            responseFields(
+                fieldWithPath("id").type(JsonFieldType.NUMBER).description("인덱스"),
+                fieldWithPath("name").type(JsonFieldType.STRING).description("파일 이름"),
+                fieldWithPath("parentFullName").type(JsonFieldType.NULL).description("상위 폴더 경로"),
+                fieldWithPath("fullName").type(JsonFieldType.STRING).description("전체 경로"),
+                fieldWithPath("bucketName").type(JsonFieldType.STRING).description("버킷 이름"),
+                fieldWithPath("size").type(JsonFieldType.NUMBER).description("용량"),
+                fieldWithPath("isFolder").type(JsonFieldType.BOOLEAN).description("폴더 여부")
+            )
+        ));
     }
 }
