@@ -1,0 +1,26 @@
+ifndef::snippets[]
+:snippets: ./build/generated-snippets
+endif::[]
+
+= mini-MYBOX API
+:toc: left
+:toclevels: 4
+:toc-title: mini-mybox api
+
+== API TEST
+
+=== REQUEST
+
+include::{snippets}/create-folder-object-api/http-request.adoc[]
+
+=== REQEUST PARAMETER
+
+include::{snippets}/create-folder-object-api/request-parameters.adoc[]
+
+=== RESPONSE
+
+include::{snippets}/create-folder-object-api/http-response.adoc[]
+
+=== RESPONSE FIELD
+
+include::{snippets}/create-folder-object-api/response-fields.adoc[]

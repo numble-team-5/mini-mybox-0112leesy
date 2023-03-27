@@ -124,7 +124,70 @@ class ObjectControllerTest {
     @Test
     @DisplayName("폴더 생성 테스트")
     void createFolder() throws Exception {
+        // given
+        String folderName = "folder-depth-2/";
+        String parentFullName = "folder-depth-1/";
+        String bucketName = "test-bucket";
 
+        ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
+            .name(folderName)
+            .parentFullName(parentFullName)
+            .bucketName(bucketName)
+            .build();
+
+        Object newFolder = Object.builder()
+            .id(1L)
+            .name(folderName)
+            .parentFullName(parentFullName)
+            .fullName(parentFullName+folderName)
+            .bucketName(bucketName)
+            .size(0.0)
+            .isFolder(true)
+            .build();
+
+        System.out.println(newFolder.toString());
+
+        given(objectService.createFolder(objectRequestDto)).willReturn(newFolder);
+
+        // when
+        ResultActions actions = mockMvc.perform(
+            post("/object-api/folder")
+                .param("name", folderName)
+                .param("parentFullName", parentFullName)
+                .param("bucketName", bucketName));
+
+        // then
+        actions.andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").exists())
+            .andExpect(jsonPath("$.name").exists())
+            .andExpect(jsonPath("$.parentFullName").exists())
+            .andExpect(jsonPath("$.fullName").value(parentFullName+folderName))
+            .andExpect(jsonPath("$.bucketName").exists())
+            .andExpect(jsonPath("$.size").exists())
+            .andExpect(jsonPath("$.isFolder").exists())
+            .andDo(print());
+
+        verify(objectService).createFolder(objectRequestDto);
+
+        // docs
+        actions.andDo(document("create-folder-object-api",
+            preprocessRequest(prettyPrint()),
+            preprocessResponse(prettyPrint()),
+            requestParameters(
+                parameterWithName("name").description("폴더 이름"),
+                parameterWithName("parentFullName").description("상위 폴더 경로"),
+                parameterWithName("bucketName").description("버킷 이름")
+            ),
+            responseFields(
+                fieldWithPath("id").type(JsonFieldType.NUMBER).description("인덱스"),
+                fieldWithPath("name").type(JsonFieldType.STRING).description("폴더 이름"),
+                fieldWithPath("parentFullName").type(JsonFieldType.STRING).description("상위 폴더 경로"),
+                fieldWithPath("fullName").type(JsonFieldType.STRING).description("전체 경로"),
+                fieldWithPath("bucketName").type(JsonFieldType.STRING).description("버킷 이름"),
+                fieldWithPath("size").type(JsonFieldType.NUMBER).description("용량"),
+                fieldWithPath("isFolder").type(JsonFieldType.BOOLEAN).description("폴더 여부")
+            )
+        ));
     }
 
     @Test
