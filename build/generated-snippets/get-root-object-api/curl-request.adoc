@@ -1,0 +1,4 @@
+[source,bash]
+----
+$ curl 'http://api:8081/object-api/bucket?bucketName=test-bucket' -i -X GET
+----

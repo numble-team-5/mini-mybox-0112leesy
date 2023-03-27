@@ -1,0 +1,5 @@
+[source,bash]
+----
+$ curl 'http://api:8081/object-api/folder' -i -X POST \
+    -d 'name=folder-depth-2%2F&parentFullName=folder-depth-1%2F&bucketName=test-bucket'
+----

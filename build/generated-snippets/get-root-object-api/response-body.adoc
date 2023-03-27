@@ -1,0 +1,22 @@
+[source,options="nowrap"]
+----
+{
+  "data" : [ {
+    "id" : 1,
+    "fullName" : "image1.jpg",
+    "parentFullName" : null,
+    "name" : "image1.jpg",
+    "bucketName" : "test-bucket",
+    "size" : 2.3,
+    "isFolder" : false
+  }, {
+    "id" : 2,
+    "fullName" : "folder1/",
+    "parentFullName" : null,
+    "name" : "folder1/",
+    "bucketName" : "test-bucket",
+    "size" : 0.0,
+    "isFolder" : true
+  } ]
+}
+----

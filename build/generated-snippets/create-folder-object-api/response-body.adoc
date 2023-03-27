@@ -1,0 +1,12 @@
+[source,options="nowrap"]
+----
+{
+  "id" : 1,
+  "fullName" : "folder-depth-1/folder-depth-2/",
+  "parentFullName" : "folder-depth-1/",
+  "name" : "folder-depth-2/",
+  "bucketName" : "test-bucket",
+  "size" : 0.0,
+  "isFolder" : true
+}
+----
