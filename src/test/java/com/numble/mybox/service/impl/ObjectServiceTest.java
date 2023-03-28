@@ -1,34 +1,35 @@
 package com.numble.mybox.service.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
-import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.numble.mybox.data.dto.FileRequestDto;
 import com.numble.mybox.data.dto.ObjectRequestDto;
 import com.numble.mybox.data.entity.Object;
-import com.numble.mybox.data.entity.QObject;
 import com.numble.mybox.data.repository.ObjectRepository;
-import com.querydsl.core.QueryFactory;
 import com.querydsl.core.types.Predicate;
-import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(SpringExtension.class)
 @Import({ObjectServiceImpl.class})
@@ -51,7 +52,7 @@ class ObjectServiceTest {
         JPAQuery step1 = Mockito.mock(JPAQuery.class);
         JPAQuery step2 = Mockito.mock(JPAQuery.class);
 
-        Object object1 =  Object.builder()
+        Object object1 = Object.builder()
             .id(1L)
             .name("folder/")
             .fullName("folder/")
@@ -61,7 +62,7 @@ class ObjectServiceTest {
             .isFolder(true)
             .build();
 
-        Object object2 =  Object.builder()
+        Object object2 = Object.builder()
             .id(2L)
             .name("image.jpg")
             .fullName("image.jpg")
@@ -143,6 +144,70 @@ class ObjectServiceTest {
     }
 
     @Test
-    void createFile() {
+    @DisplayName("루트에 텍스트 파일 생성 테스트")
+    void createTextFileInRootTest() throws IOException {
+        // given
+        MultipartFile multipartFile = Mockito.mock(MultipartFile.class);
+        Mockito.when(multipartFile.getContentType()).thenReturn("text/plain");
+        Mockito.when(multipartFile.getOriginalFilename()).thenReturn("textFile.txt");
+        String text = "This is sample text.";
+        InputStream inputStream = new ByteArrayInputStream(text.getBytes());
+        Mockito.when(multipartFile.getSize()).thenReturn((long) text.getBytes().length);
+        Mockito.when(multipartFile.getInputStream()).thenReturn(inputStream);
+
+        FileRequestDto fileRequestDto = FileRequestDto.builder()
+            .multipartFile(multipartFile)
+            .parentFullName(null)
+            .bucketName("test-bucket")
+            .build();
+
+        Mockito.when(objectRepository.save(any(Object.class))).then(returnsFirstArg());
+
+        // when
+        Object newFile = objectService.createFile(fileRequestDto);
+
+        // then
+        Assertions.assertEquals(newFile.getName(), "textFile.txt");
+        Assertions.assertEquals(newFile.getFullName(), "textFile.txt");
+        Assertions.assertNull(newFile.getParentFullName());
+        Assertions.assertEquals(newFile.getBucketName(), "test-bucket");
+        Assertions.assertEquals(newFile.getSize(), text.getBytes().length / 1024.0 / 1024.0);
+        Assertions.assertEquals(newFile.getIsFolder(), false);
+
+        verify(amazonS3).putObject(any(PutObjectRequest.class));
+        verify(objectRepository).save(any(Object.class));
+    }
+
+    @Test
+    @DisplayName("폴더에 이미지 파일 생성 테스트")
+    void createImageFileInFolderTest() throws IOException {
+        // given
+        String originalFilename = "testImage1.jpeg";
+        MockMultipartFile file = new MockMultipartFile("multipartFile",
+            originalFilename,
+            "image/jpg",
+            new FileInputStream("src/test/resources/" + originalFilename));
+
+        FileRequestDto fileRequestDto = FileRequestDto.builder()
+            .multipartFile(file)
+            .parentFullName("depth-1/")
+            .bucketName("test-bucket")
+            .build();
+
+        Mockito.when(objectRepository.save(any(Object.class))).then(returnsFirstArg());
+
+        // when
+        Object newFile = objectService.createFile(fileRequestDto);
+
+        // then
+        Assertions.assertEquals(newFile.getName(), originalFilename);
+        Assertions.assertEquals(newFile.getFullName(), "depth-1/" + originalFilename);
+        Assertions.assertEquals(newFile.getParentFullName(), "depth-1/");
+        Assertions.assertEquals(newFile.getBucketName(), "test-bucket");
+        Assertions.assertEquals((int) Math.round(newFile.getSize()), 2);
+        Assertions.assertEquals(newFile.getIsFolder(), false);
+
+        verify(amazonS3).putObject(any(PutObjectRequest.class));
+        verify(objectRepository).save(any(Object.class));
     }
 }
