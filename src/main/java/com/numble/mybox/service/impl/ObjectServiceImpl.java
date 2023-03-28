@@ -50,8 +50,8 @@ public class ObjectServiceImpl implements ObjectService {
 
         List<Object> objectList = queryFactory.selectFrom(qObject)
             .where(
-                qObject.bucketName.eq(bucketName),
-                qObject.parentFullName.isNull())
+                qObject.bucketName.eq(bucketName).and(qObject.parentFullName.isNull())
+            )
             .fetch();
 
         return objectList;
