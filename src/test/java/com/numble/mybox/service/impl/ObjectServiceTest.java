@@ -1,11 +1,14 @@
 package com.numble.mybox.service.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.numble.mybox.data.dto.ObjectRequestDto;
 import com.numble.mybox.data.entity.Object;
 import com.numble.mybox.data.entity.QObject;
 import com.numble.mybox.data.repository.ObjectRepository;
@@ -90,16 +93,53 @@ class ObjectServiceTest {
     @Test
     @DisplayName("루트 폴더 생성 테스트")
     void createRootFolderTest() {
+        // given
+        ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
+            .name("root-folder/")
+            .parentFullName(null)
+            .bucketName("test-bucket")
+            .build();
+
+        Mockito.when(objectRepository.save(any(Object.class))).then(returnsFirstArg());
+
+        // when
+        Object newFolder = objectService.createFolder(objectRequestDto);
+
+        // then
+        Assertions.assertEquals(newFolder.getName(), "root-folder/");
+        Assertions.assertEquals(newFolder.getFullName(), "root-folder/");
+        Assertions.assertNull(newFolder.getParentFullName());
+        Assertions.assertEquals(newFolder.getBucketName(), "test-bucket");
+        Assertions.assertEquals(newFolder.getSize(), 0.0);
+        Assertions.assertEquals(newFolder.getIsFolder(), true);
+
+        verify(objectRepository).save(any(Object.class));
     }
 
     @Test
-    @DisplayName("루트 폴더 생성 테스트")
+    @DisplayName("폴더 내 폴더 생성 테스트")
     void createFolderInFolderTest() {
-    }
+        // given
+        ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
+            .name("depth-2/")
+            .parentFullName("depth-1/")
+            .bucketName("test-bucket")
+            .build();
 
-    @Test
-    @DisplayName("폴더 생성 실패 테스트")
-    void createFolderFailTest() {
+        Mockito.when(objectRepository.save(any(Object.class))).then(returnsFirstArg());
+
+        // when
+        Object newFolder = objectService.createFolder(objectRequestDto);
+
+        // then
+        Assertions.assertEquals(newFolder.getName(), "depth-2/");
+        Assertions.assertEquals(newFolder.getFullName(), "depth-1/depth-2/");
+        Assertions.assertEquals(newFolder.getParentFullName(), "depth-1/");
+        Assertions.assertEquals(newFolder.getBucketName(), "test-bucket");
+        Assertions.assertEquals(newFolder.getSize(), 0.0);
+        Assertions.assertEquals(newFolder.getIsFolder(), true);
+
+        verify(objectRepository).save(any(Object.class));
     }
 
     @Test
