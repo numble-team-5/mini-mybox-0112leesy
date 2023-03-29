@@ -2,8 +2,8 @@
 ----
 {
   "id" : 1,
-  "fullName" : "testImage1.jpeg",
-  "parentFullName" : null,
+  "path" : "testImage1.jpeg",
+  "parentPath" : "",
   "name" : "testImage1.jpeg",
   "bucketName" : "test-bucket",
   "size" : 2.3,

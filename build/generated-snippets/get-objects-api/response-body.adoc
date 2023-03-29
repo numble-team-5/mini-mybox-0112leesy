@@ -3,16 +3,16 @@
 {
   "data" : [ {
     "id" : 1,
-    "fullName" : "folder/image1.jpg",
-    "parentFullName" : "folder/",
+    "path" : "folder/image1.jpg",
+    "parentPath" : "folder/",
     "name" : "image1.jpg",
     "bucketName" : "test-bucket",
     "size" : 2.3,
     "isFolder" : false
   }, {
     "id" : 2,
-    "fullName" : "folder/folder-depth2/",
-    "parentFullName" : "folder/",
+    "path" : "folder/folder-depth2/",
+    "parentPath" : "folder/",
     "name" : "folder-depth2/",
     "bucketName" : "test-bucket",
     "size" : 0.0,

@@ -16,7 +16,7 @@ public class ObjectRequestDto {
 
     private String bucketName;
     private String name;
-    private String parentFullName;
+    private String parentPath;
     private Boolean isFolder;
 
 }

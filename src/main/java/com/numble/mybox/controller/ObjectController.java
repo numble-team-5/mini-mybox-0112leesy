@@ -33,9 +33,9 @@ public class ObjectController {
 
     @GetMapping("/bucket")
     public ResponseEntity<Map<String, List<Object>>> getRootObject(@RequestParam String bucketName,
-        String parentFullName) {
+        String parentPath) {
         Map<String, List<Object>> result = new HashMap<>();
-        result.put("data", objectService.getObjects(bucketName, parentFullName));
+        result.put("data", objectService.getObjects(bucketName, parentPath));
 
         return ResponseEntity.ok().body(result);
     }

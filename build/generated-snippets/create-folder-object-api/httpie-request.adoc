@@ -2,6 +2,6 @@
 ----
 $ http --form POST 'http://api:8081/object-api/folder' \
     'name=folder-depth-2/' \
-    'parentFullName=folder-depth-1/' \
+    'parentPath=folder-depth-1/' \
     'bucketName=test-bucket'
 ----

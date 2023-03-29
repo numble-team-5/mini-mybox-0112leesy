@@ -47,7 +47,7 @@ class ObjectServiceTest {
 
     @Test
     @DisplayName("루트 오브젝트 조회 테스트")
-    void getRootObjectTest() {
+    void getRootObjectsTest() {
         // given
         JPAQuery step1 = Mockito.mock(JPAQuery.class);
         JPAQuery step2 = Mockito.mock(JPAQuery.class);
@@ -55,8 +55,8 @@ class ObjectServiceTest {
         Object object1 = Object.builder()
             .id(1L)
             .name("folder/")
-            .fullName("folder/")
-            .parentFullName(null)
+            .path("folder/")
+            .parentPath("")
             .bucketName("test-bucket")
             .size(0.0)
             .isFolder(true)
@@ -65,8 +65,8 @@ class ObjectServiceTest {
         Object object2 = Object.builder()
             .id(2L)
             .name("image.jpg")
-            .fullName("image.jpg")
-            .parentFullName(null)
+            .path("image.jpg")
+            .parentPath("")
             .bucketName("test-bucket")
             .size(2.3)
             .isFolder(false)
@@ -77,14 +77,62 @@ class ObjectServiceTest {
         Mockito.when(step2.fetch()).thenReturn(Lists.newArrayList(object1, object2));
 
         // when
-        List<Object> rootObjects = objectService.getRootObject("test-bucket");
+        List<Object> rootObjects = objectService.getObjects("test-bucket", "");
 
         // then
         Assertions.assertEquals(rootObjects.size(), 2);
-        Assertions.assertNull(rootObjects.get(0).getParentFullName());
-        Assertions.assertNull(rootObjects.get(1).getParentFullName());
+        Assertions.assertEquals(rootObjects.get(0).getParentPath(), "");
+        Assertions.assertEquals(rootObjects.get(1).getParentPath(), "");
         Assertions.assertEquals(rootObjects.get(0).getBucketName(), "test-bucket");
         Assertions.assertEquals(rootObjects.get(1).getBucketName(), "test-bucket");
+
+        verify(queryFactory).selectFrom(any());
+        verify(step1).where(any(Predicate.class));
+        verify(step2).fetch();
+    }
+
+    @Test
+    @DisplayName("폴더 내 오브젝트 조회 테스트")
+    void getObjectsInFolderTest() {
+        // given
+        JPAQuery step1 = Mockito.mock(JPAQuery.class);
+        JPAQuery step2 = Mockito.mock(JPAQuery.class);
+
+        Object object1 = Object.builder()
+            .id(1L)
+            .name("folder/")
+            .path("parent-folder/folder/")
+            .parentPath("parent-folder/")
+            .bucketName("test-bucket")
+            .size(0.0)
+            .isFolder(true)
+            .build();
+
+        Object object2 = Object.builder()
+            .id(2L)
+            .name("image.jpg")
+            .path("parent-folder/image.jpg")
+            .parentPath("parent-folder/")
+            .bucketName("test-bucket")
+            .size(2.3)
+            .isFolder(false)
+            .build();
+
+        Mockito.when(queryFactory.selectFrom(any())).thenReturn(step1);
+        Mockito.when(step1.where(any(Predicate.class))).thenReturn(step2);
+        Mockito.when(step2.fetch()).thenReturn(Lists.newArrayList(object1, object2));
+
+        // when
+        List<Object> objectsInFolder = objectService.getObjects("test-bucket", "parent-folder/");
+
+        // then
+        Assertions.assertEquals(objectsInFolder.size(), 2);
+        Assertions.assertEquals(objectsInFolder.get(0).getParentPath(), "parent-folder/");
+        Assertions.assertEquals(objectsInFolder.get(1).getParentPath(), "parent-folder/");
+        Assertions.assertTrue(objectsInFolder.get(0).getPath().contains("parent-folder/"));
+        Assertions.assertTrue(objectsInFolder.get(1).getPath().contains("parent-folder/"));
+        Assertions.assertEquals(objectsInFolder.get(0).getBucketName(), "test-bucket");
+        Assertions.assertEquals(objectsInFolder.get(1).getBucketName(), "test-bucket");
 
         verify(queryFactory).selectFrom(any());
         verify(step1).where(any(Predicate.class));
@@ -97,7 +145,7 @@ class ObjectServiceTest {
         // given
         ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
             .name("root-folder/")
-            .parentFullName(null)
+            .parentPath("")
             .bucketName("test-bucket")
             .build();
 
@@ -108,8 +156,8 @@ class ObjectServiceTest {
 
         // then
         Assertions.assertEquals(newFolder.getName(), "root-folder/");
-        Assertions.assertEquals(newFolder.getFullName(), "root-folder/");
-        Assertions.assertNull(newFolder.getParentFullName());
+        Assertions.assertEquals(newFolder.getPath(), "root-folder/");
+        Assertions.assertEquals(newFolder.getParentPath(), "");
         Assertions.assertEquals(newFolder.getBucketName(), "test-bucket");
         Assertions.assertEquals(newFolder.getSize(), 0.0);
         Assertions.assertEquals(newFolder.getIsFolder(), true);
@@ -123,7 +171,7 @@ class ObjectServiceTest {
         // given
         ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
             .name("depth-2/")
-            .parentFullName("depth-1/")
+            .parentPath("depth-1/")
             .bucketName("test-bucket")
             .build();
 
@@ -134,8 +182,8 @@ class ObjectServiceTest {
 
         // then
         Assertions.assertEquals(newFolder.getName(), "depth-2/");
-        Assertions.assertEquals(newFolder.getFullName(), "depth-1/depth-2/");
-        Assertions.assertEquals(newFolder.getParentFullName(), "depth-1/");
+        Assertions.assertEquals(newFolder.getPath(), "depth-1/depth-2/");
+        Assertions.assertEquals(newFolder.getParentPath(), "depth-1/");
         Assertions.assertEquals(newFolder.getBucketName(), "test-bucket");
         Assertions.assertEquals(newFolder.getSize(), 0.0);
         Assertions.assertEquals(newFolder.getIsFolder(), true);
@@ -157,7 +205,7 @@ class ObjectServiceTest {
 
         FileRequestDto fileRequestDto = FileRequestDto.builder()
             .multipartFile(multipartFile)
-            .parentFullName(null)
+            .parentPath("")
             .bucketName("test-bucket")
             .build();
 
@@ -168,8 +216,8 @@ class ObjectServiceTest {
 
         // then
         Assertions.assertEquals(newFile.getName(), "textFile.txt");
-        Assertions.assertEquals(newFile.getFullName(), "textFile.txt");
-        Assertions.assertNull(newFile.getParentFullName());
+        Assertions.assertEquals(newFile.getPath(), "textFile.txt");
+        Assertions.assertEquals(newFile.getParentPath(), "");
         Assertions.assertEquals(newFile.getBucketName(), "test-bucket");
         Assertions.assertEquals(newFile.getSize(), text.getBytes().length / 1024.0 / 1024.0);
         Assertions.assertEquals(newFile.getIsFolder(), false);
@@ -190,7 +238,7 @@ class ObjectServiceTest {
 
         FileRequestDto fileRequestDto = FileRequestDto.builder()
             .multipartFile(file)
-            .parentFullName("depth-1/")
+            .parentPath("depth-1/")
             .bucketName("test-bucket")
             .build();
 
@@ -201,8 +249,8 @@ class ObjectServiceTest {
 
         // then
         Assertions.assertEquals(newFile.getName(), originalFilename);
-        Assertions.assertEquals(newFile.getFullName(), "depth-1/" + originalFilename);
-        Assertions.assertEquals(newFile.getParentFullName(), "depth-1/");
+        Assertions.assertEquals(newFile.getPath(), "depth-1/" + originalFilename);
+        Assertions.assertEquals(newFile.getParentPath(), "depth-1/");
         Assertions.assertEquals(newFile.getBucketName(), "test-bucket");
         Assertions.assertEquals((int) Math.round(newFile.getSize()), 2);
         Assertions.assertEquals(newFile.getIsFolder(), false);

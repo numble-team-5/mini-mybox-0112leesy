@@ -2,5 +2,6 @@
 ----
 $ http --multipart POST 'http://api:8081/object-api/file' \
     'multipartFile'@'testImage1.jpeg' \
-    'bucketName=test-bucket'
+    'bucketName=test-bucket' \
+    'parentPath='
 ----

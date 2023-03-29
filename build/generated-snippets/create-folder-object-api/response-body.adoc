@@ -2,8 +2,8 @@
 ----
 {
   "id" : 1,
-  "fullName" : "folder-depth-1/folder-depth-2/",
-  "parentFullName" : "folder-depth-1/",
+  "path" : "folder-depth-1/folder-depth-2/",
+  "parentPath" : "folder-depth-1/",
   "name" : "folder-depth-2/",
   "bucketName" : "test-bucket",
   "size" : 0.0,

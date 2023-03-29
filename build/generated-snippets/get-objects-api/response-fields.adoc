@@ -13,11 +13,11 @@
 |`+String+`
 |파일/폴더 이름
 
-|`+data[0].fullName+`
+|`+data[0].path+`
 |`+String+`
 |경로
 
-|`+data[0].parentFullName+`
+|`+data[0].parentPath+`
 |`+String+`
 |상위 폴더 경로
 

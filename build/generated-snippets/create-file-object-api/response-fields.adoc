@@ -9,13 +9,13 @@
 |`+String+`
 |파일 이름
 
-|`+parentFullName+`
-|`+Null+`
+|`+parentPath+`
+|`+String+`
 |상위 폴더 경로
 
-|`+fullName+`
+|`+path+`
 |`+String+`
-|전체 경로
+|경로
 
 |`+bucketName+`
 |`+String+`

@@ -1,6 +1,6 @@
 [source,http,options="nowrap"]
 ----
-GET /object-api/bucket?bucketName=test-bucket HTTP/1.1
+GET /object-api/bucket?bucketName=test-bucket&parentFullName=folder/ HTTP/1.1
 Host: api:8081
 
 ----

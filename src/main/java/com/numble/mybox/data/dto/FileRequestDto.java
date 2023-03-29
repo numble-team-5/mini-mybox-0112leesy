@@ -14,6 +14,6 @@ public class FileRequestDto {
 
     private MultipartFile multipartFile;
     private String bucketName;
-    private String parentFullName;
+    private String parentPath;
 
 }

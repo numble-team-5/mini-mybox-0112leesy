@@ -39,12 +39,12 @@ public class ObjectServiceImpl implements ObjectService {
     }
 
     @Override
-    public List<Object> getObjects(String bucketName, String parentFullName) {
+    public List<Object> getObjects(String bucketName, String parentPath) {
         QObject qObject = QObject.object;
 
         List<Object> objectList = queryFactory.selectFrom(qObject)
             .where(
-                qObject.bucketName.eq(bucketName).and(qObject.parentFullName.eq(parentFullName))
+                qObject.bucketName.eq(bucketName).and(qObject.parentPath.eq(parentPath))
             )
             .fetch();
 
@@ -53,12 +53,12 @@ public class ObjectServiceImpl implements ObjectService {
 
     @Override
     public Object createFolder(ObjectRequestDto objectRequestDto) {
-        String fullName = objectRequestDto.getParentFullName() + objectRequestDto.getName();
+        String path = objectRequestDto.getParentPath() + objectRequestDto.getName();
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentLength(0L);
         objectMetadata.setContentType("application/x-directory");
         PutObjectRequest putObjectRequest = new PutObjectRequest(objectRequestDto.getBucketName(),
-            fullName, new ByteArrayInputStream(new byte[0]), objectMetadata);
+            path, new ByteArrayInputStream(new byte[0]), objectMetadata);
 
         try {
             amazonS3.putObject(putObjectRequest);
@@ -73,8 +73,8 @@ public class ObjectServiceImpl implements ObjectService {
             .bucketName(objectRequestDto.getBucketName())
             .name(objectRequestDto.getName())
             .size(0.0)
-            .fullName(fullName)
-            .parentFullName(objectRequestDto.getParentFullName())
+            .path(path)
+            .parentPath(objectRequestDto.getParentPath())
             .isFolder(true)
             .build();
 
@@ -89,7 +89,7 @@ public class ObjectServiceImpl implements ObjectService {
         String fileName = Normalizer.normalize(multipartFile.getOriginalFilename(), Normalizer.Form.NFC);
 
         // byte[] file = ImageUtils.compressImage(fileRequestDto.getMultipartFile().getBytes())
-        String fullName = fileRequestDto.getParentFullName() + fileName;
+        String path = fileRequestDto.getParentPath() + fileName;
 
         ObjectMetadata objectMetadata = new ObjectMetadata();
         // long fileSize = file.length;
@@ -101,7 +101,7 @@ public class ObjectServiceImpl implements ObjectService {
         objectMetadata.setContentType(contentType);
 
         PutObjectRequest putObjectRequest = new PutObjectRequest(fileRequestDto.getBucketName(),
-            fullName, multipartFile.getInputStream(), objectMetadata);
+            path, multipartFile.getInputStream(), objectMetadata);
 
 
         try {
@@ -117,8 +117,8 @@ public class ObjectServiceImpl implements ObjectService {
             .bucketName(fileRequestDto.getBucketName())
             .name(fileName)
             .size(fileSizeMb)
-            .fullName(fullName)
-            .parentFullName(fileRequestDto.getParentFullName())
+            .path(path)
+            .parentPath(fileRequestDto.getParentPath())
             .isFolder(false)
             .build();
 
