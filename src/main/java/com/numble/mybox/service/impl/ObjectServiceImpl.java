@@ -11,21 +11,15 @@ import com.numble.mybox.data.entity.Object;
 import com.numble.mybox.data.entity.QObject;
 import com.numble.mybox.data.repository.ObjectRepository;
 import com.numble.mybox.service.ObjectService;
-import com.numble.mybox.utils.ImageUtils;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.text.Normalizer;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -45,12 +39,12 @@ public class ObjectServiceImpl implements ObjectService {
     }
 
     @Override
-    public List<Object> getRootObject(String bucketName) {
+    public List<Object> getObjects(String bucketName, String parentFullName) {
         QObject qObject = QObject.object;
 
         List<Object> objectList = queryFactory.selectFrom(qObject)
             .where(
-                qObject.bucketName.eq(bucketName).and(qObject.parentFullName.isNull())
+                qObject.bucketName.eq(bucketName).and(qObject.parentFullName.eq(parentFullName))
             )
             .fetch();
 
@@ -59,11 +53,7 @@ public class ObjectServiceImpl implements ObjectService {
 
     @Override
     public Object createFolder(ObjectRequestDto objectRequestDto) {
-        String fullName = objectRequestDto.getName();
-        if(objectRequestDto.getParentFullName() != null) {
-            fullName = objectRequestDto.getParentFullName() + fullName;
-        }
-
+        String fullName = objectRequestDto.getParentFullName() + objectRequestDto.getName();
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentLength(0L);
         objectMetadata.setContentType("application/x-directory");
@@ -99,10 +89,7 @@ public class ObjectServiceImpl implements ObjectService {
         String fileName = Normalizer.normalize(multipartFile.getOriginalFilename(), Normalizer.Form.NFC);
 
         // byte[] file = ImageUtils.compressImage(fileRequestDto.getMultipartFile().getBytes())
-        String fullName = fileName;
-        if(fileRequestDto.getParentFullName() != null) {
-            fullName = fileRequestDto.getParentFullName() + fullName;
-        }
+        String fullName = fileRequestDto.getParentFullName() + fileName;
 
         ObjectMetadata objectMetadata = new ObjectMetadata();
         // long fileSize = file.length;

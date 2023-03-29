@@ -32,9 +32,10 @@ public class ObjectController {
     }
 
     @GetMapping("/bucket")
-    public ResponseEntity<Map<String, List<Object>>> getRootObject(@RequestParam String bucketName) {
+    public ResponseEntity<Map<String, List<Object>>> getRootObject(@RequestParam String bucketName,
+        String parentFullName) {
         Map<String, List<Object>> result = new HashMap<>();
-        result.put("data", objectService.getRootObject(bucketName));
+        result.put("data", objectService.getObjects(bucketName, parentFullName));
 
         return ResponseEntity.ok().body(result);
     }
@@ -47,7 +48,8 @@ public class ObjectController {
     }
 
     @PostMapping("/file")
-    public ResponseEntity<Object> createFile(@ModelAttribute FileRequestDto fileRequestDto) throws IOException {
+    public ResponseEntity<Object> createFile(@ModelAttribute FileRequestDto fileRequestDto)
+        throws IOException {
 
         Object newObject = objectService.createFile(fileRequestDto);
         return ResponseEntity.ok().body(newObject);
