@@ -60,14 +60,7 @@ public class ObjectServiceImpl implements ObjectService {
         PutObjectRequest putObjectRequest = new PutObjectRequest(objectRequestDto.getBucketName(),
             path, new ByteArrayInputStream(new byte[0]), objectMetadata);
 
-        try {
-            amazonS3.putObject(putObjectRequest);
-            System.out.format("Folder %s has been created.\n", objectRequestDto.getName());
-        } catch (AmazonS3Exception e) {
-            e.printStackTrace();
-        } catch (SdkClientException e) {
-            e.printStackTrace();
-        }
+        S3PutObject(putObjectRequest, objectRequestDto.getName());
 
         Object newFolder = Object.builder()
             .bucketName(objectRequestDto.getBucketName())
@@ -103,15 +96,7 @@ public class ObjectServiceImpl implements ObjectService {
         PutObjectRequest putObjectRequest = new PutObjectRequest(fileRequestDto.getBucketName(),
             path, multipartFile.getInputStream(), objectMetadata);
 
-
-        try {
-            amazonS3.putObject(putObjectRequest);
-            System.out.format("Object %s has been created.\n", fileName);
-        } catch (AmazonS3Exception e) {
-            e.printStackTrace();
-        } catch (SdkClientException e) {
-            e.printStackTrace();
-        }
+        S3PutObject(putObjectRequest, fileName);
 
         Object newFile = Object.builder()
             .bucketName(fileRequestDto.getBucketName())
@@ -126,5 +111,15 @@ public class ObjectServiceImpl implements ObjectService {
         return savedFile;
     }
 
+    private void S3PutObject(PutObjectRequest putObjectRequest, String objectName) {
+        try {
+            amazonS3.putObject(putObjectRequest);
+            System.out.format("Object %s has been created.\n", objectName);
+        } catch (AmazonS3Exception e) {
+            e.printStackTrace();
+        } catch (SdkClientException e) {
+            e.printStackTrace();
+        }
+    }
 
 }
