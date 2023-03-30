@@ -22,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.numble.mybox.data.dto.FileRequestDto;
 import com.numble.mybox.data.dto.ObjectRequestDto;
+import com.numble.mybox.data.dto.ObjectResponseDto;
 import com.numble.mybox.data.entity.Object;
 import com.numble.mybox.service.impl.ObjectServiceImpl;
 import java.io.FileInputStream;
@@ -140,17 +141,19 @@ class ObjectControllerTest {
             .bucketName(bucketName)
             .build();
 
-        Object newFolder = Object.builder()
-            .id(1L)
+        ObjectResponseDto objectResponseDto = ObjectResponseDto.builder()
             .name(folderName)
             .parentPath(parentPath)
             .path(parentPath+folderName)
             .bucketName(bucketName)
             .size(0.0)
             .isFolder(true)
+            .code(0)
+            .success(true)
+            .msg("정상적으로 처리되었습니다.")
             .build();
 
-        given(objectService.createFolder(objectRequestDto)).willReturn(newFolder);
+        given(objectService.createFolder(objectRequestDto)).willReturn(objectResponseDto);
 
         // when
         ResultActions actions = mockMvc.perform(
@@ -161,7 +164,6 @@ class ObjectControllerTest {
 
         // then
         actions.andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").exists())
             .andExpect(jsonPath("$.name").exists())
             .andExpect(jsonPath("$.parentPath").exists())
             .andExpect(jsonPath("$.path").value(parentPath+folderName))
@@ -182,13 +184,15 @@ class ObjectControllerTest {
                 parameterWithName("bucketName").description("버킷 이름")
             ),
             responseFields(
-                fieldWithPath("id").type(JsonFieldType.NUMBER).description("인덱스"),
                 fieldWithPath("name").type(JsonFieldType.STRING).description("폴더 이름"),
                 fieldWithPath("parentPath").type(JsonFieldType.STRING).description("상위 폴더 경로"),
                 fieldWithPath("path").type(JsonFieldType.STRING).description("경로"),
                 fieldWithPath("bucketName").type(JsonFieldType.STRING).description("버킷 이름"),
                 fieldWithPath("size").type(JsonFieldType.NUMBER).description("용량"),
-                fieldWithPath("isFolder").type(JsonFieldType.BOOLEAN).description("폴더 여부")
+                fieldWithPath("isFolder").type(JsonFieldType.BOOLEAN).description("폴더 여부"),
+                fieldWithPath("success").type(JsonFieldType.BOOLEAN).description("성공여부"),
+                fieldWithPath("code").type(JsonFieldType.NUMBER).description("코드"),
+                fieldWithPath("msg").type(JsonFieldType.STRING).description("메시지")
             )
         ));
     }
@@ -210,17 +214,19 @@ class ObjectControllerTest {
             .multipartFile(file)
             .build();
 
-        Object newFile = Object.builder()
-            .id(1L)
+        ObjectResponseDto objectResponseDto = ObjectResponseDto.builder()
             .name(originalFilename)
             .parentPath("")
             .path(originalFilename)
             .bucketName(bucketName)
             .size(2.3)
             .isFolder(false)
+            .code(0)
+            .success(true)
+            .msg("정상적으로 처리되었습니다.")
             .build();
 
-        given(objectService.createFile(fileRequestDto)).willReturn(newFile);
+        given(objectService.createFile(fileRequestDto)).willReturn(objectResponseDto);
 
         // when
         ResultActions actions = mockMvc.perform(
@@ -230,7 +236,6 @@ class ObjectControllerTest {
 
         // then
         actions.andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").exists())
             .andExpect(jsonPath("$.name").exists())
             .andExpect(jsonPath("$.parentPath").value(""))
             .andExpect(jsonPath("$.path").value(originalFilename))
@@ -253,13 +258,15 @@ class ObjectControllerTest {
                 parameterWithName("parentPath").description("상위 폴더 경로")
             ),
             responseFields(
-                fieldWithPath("id").type(JsonFieldType.NUMBER).description("인덱스"),
                 fieldWithPath("name").type(JsonFieldType.STRING).description("파일 이름"),
                 fieldWithPath("parentPath").type(JsonFieldType.STRING).description("상위 폴더 경로"),
                 fieldWithPath("path").type(JsonFieldType.STRING).description("경로"),
                 fieldWithPath("bucketName").type(JsonFieldType.STRING).description("버킷 이름"),
                 fieldWithPath("size").type(JsonFieldType.NUMBER).description("용량"),
-                fieldWithPath("isFolder").type(JsonFieldType.BOOLEAN).description("폴더 여부")
+                fieldWithPath("isFolder").type(JsonFieldType.BOOLEAN).description("폴더 여부"),
+                fieldWithPath("success").type(JsonFieldType.BOOLEAN).description("성공여부"),
+                fieldWithPath("code").type(JsonFieldType.NUMBER).description("코드"),
+                fieldWithPath("msg").type(JsonFieldType.STRING).description("메시지")
             )
         ));
     }

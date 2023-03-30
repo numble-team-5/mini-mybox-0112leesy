@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.numble.mybox.data.dto.FileRequestDto;
 import com.numble.mybox.data.dto.ObjectRequestDto;
+import com.numble.mybox.data.dto.ObjectResponseDto;
 import com.numble.mybox.data.entity.Object;
 import com.numble.mybox.data.repository.ObjectRepository;
 import com.querydsl.core.types.Predicate;
@@ -17,6 +18,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.Assertions;
@@ -140,35 +142,15 @@ class ObjectServiceTest {
     }
 
     @Test
-    @DisplayName("루트 폴더 생성 테스트")
-    void createRootFolderTest() {
+    @DisplayName("폴더 생성 성공 테스트")
+    void createFolderSuccessTest() {
         // given
-        ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
-            .name("root-folder/")
-            .parentPath("")
-            .bucketName("test-bucket")
-            .build();
+        JPAQuery step1 = Mockito.mock(JPAQuery.class);
+        JPAQuery step2 = Mockito.mock(JPAQuery.class);
+        Mockito.when(queryFactory.selectFrom(any())).thenReturn(step1);
+        Mockito.when(step1.where(any(Predicate.class))).thenReturn(step2);
+        Mockito.when(step2.fetch()).thenReturn(Lists.newArrayList(new ArrayList()));
 
-        Mockito.when(objectRepository.save(any(Object.class))).then(returnsFirstArg());
-
-        // when
-        Object newFolder = objectService.createFolder(objectRequestDto);
-
-        // then
-        Assertions.assertEquals(newFolder.getName(), "root-folder/");
-        Assertions.assertEquals(newFolder.getPath(), "root-folder/");
-        Assertions.assertEquals(newFolder.getParentPath(), "");
-        Assertions.assertEquals(newFolder.getBucketName(), "test-bucket");
-        Assertions.assertEquals(newFolder.getSize(), 0.0);
-        Assertions.assertEquals(newFolder.getIsFolder(), true);
-
-        verify(objectRepository).save(any(Object.class));
-    }
-
-    @Test
-    @DisplayName("폴더 내 폴더 생성 테스트")
-    void createFolderInFolderTest() {
-        // given
         ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
             .name("depth-2/")
             .parentPath("depth-1/")
@@ -178,7 +160,7 @@ class ObjectServiceTest {
         Mockito.when(objectRepository.save(any(Object.class))).then(returnsFirstArg());
 
         // when
-        Object newFolder = objectService.createFolder(objectRequestDto);
+        ObjectResponseDto newFolder = objectService.createFolder(objectRequestDto);
 
         // then
         Assertions.assertEquals(newFolder.getName(), "depth-2/");
@@ -187,14 +169,65 @@ class ObjectServiceTest {
         Assertions.assertEquals(newFolder.getBucketName(), "test-bucket");
         Assertions.assertEquals(newFolder.getSize(), 0.0);
         Assertions.assertEquals(newFolder.getIsFolder(), true);
+        Assertions.assertEquals(newFolder.getCode(), 0);
+        Assertions.assertEquals(newFolder.getMsg(), "정상적으로 처리되었습니다.");
 
         verify(objectRepository).save(any(Object.class));
+        verify(queryFactory).selectFrom(any());
+        verify(step1).where(any(Predicate.class));
+        verify(step2).fetch();
     }
 
     @Test
-    @DisplayName("루트에 텍스트 파일 생성 테스트")
-    void createTextFileInRootTest() throws IOException {
+    @DisplayName("폴더 경로 중복 테스트")
+    void duplicateFolderPathTest() {
         // given
+        JPAQuery step1 = Mockito.mock(JPAQuery.class);
+        JPAQuery step2 = Mockito.mock(JPAQuery.class);
+
+        Object objectWithPath = Object.builder()
+            .id(1L)
+            .name("root-folder/")
+            .path("root-folder/")
+            .parentPath("")
+            .bucketName("test-bucket")
+            .size(0.0)
+            .isFolder(true)
+            .build();
+
+        Mockito.when(queryFactory.selectFrom(any())).thenReturn(step1);
+        Mockito.when(step1.where(any(Predicate.class))).thenReturn(step2);
+        Mockito.when(step2.fetch()).thenReturn(Lists.newArrayList(objectWithPath));
+
+        ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
+            .name("root-folder/")
+            .parentPath("")
+            .bucketName("test-bucket")
+            .build();
+
+        // when
+        ObjectResponseDto objectResponseDto = objectService.createFolder(objectRequestDto);
+
+        // then
+        Assertions.assertNull(objectResponseDto.getName());
+        Assertions.assertEquals(objectResponseDto.getCode(), -1);
+        Assertions.assertEquals(objectResponseDto.getMsg(), "이미 존재하는 파일 또는 폴더입니다.");
+
+        verify(queryFactory).selectFrom(any());
+        verify(step1).where(any(Predicate.class));
+        verify(step2).fetch();
+    }
+
+    @Test
+    @DisplayName("텍스트 파일 생성 테스트")
+    void createTextFileTest() throws IOException {
+        // given
+        JPAQuery step1 = Mockito.mock(JPAQuery.class);
+        JPAQuery step2 = Mockito.mock(JPAQuery.class);
+        Mockito.when(queryFactory.selectFrom(any())).thenReturn(step1);
+        Mockito.when(step1.where(any(Predicate.class))).thenReturn(step2);
+        Mockito.when(step2.fetch()).thenReturn(Lists.newArrayList(new ArrayList()));
+
         MultipartFile multipartFile = Mockito.mock(MultipartFile.class);
         Mockito.when(multipartFile.getContentType()).thenReturn("text/plain");
         Mockito.when(multipartFile.getOriginalFilename()).thenReturn("textFile.txt");
@@ -212,7 +245,7 @@ class ObjectServiceTest {
         Mockito.when(objectRepository.save(any(Object.class))).then(returnsFirstArg());
 
         // when
-        Object newFile = objectService.createFile(fileRequestDto);
+        ObjectResponseDto newFile = objectService.createFile(fileRequestDto);
 
         // then
         Assertions.assertEquals(newFile.getName(), "textFile.txt");
@@ -221,15 +254,26 @@ class ObjectServiceTest {
         Assertions.assertEquals(newFile.getBucketName(), "test-bucket");
         Assertions.assertEquals(newFile.getSize(), text.getBytes().length / 1024.0 / 1024.0);
         Assertions.assertEquals(newFile.getIsFolder(), false);
+        Assertions.assertEquals(newFile.getCode(), 0);
+        Assertions.assertEquals(newFile.getMsg(), "정상적으로 처리되었습니다.");
 
         verify(amazonS3).putObject(any(PutObjectRequest.class));
         verify(objectRepository).save(any(Object.class));
+        verify(queryFactory).selectFrom(any());
+        verify(step1).where(any(Predicate.class));
+        verify(step2).fetch();
     }
 
     @Test
-    @DisplayName("폴더에 이미지 파일 생성 테스트")
-    void createImageFileInFolderTest() throws IOException {
+    @DisplayName("이미지 파일 생성 테스트")
+    void createImageFileTest() throws IOException {
         // given
+        JPAQuery step1 = Mockito.mock(JPAQuery.class);
+        JPAQuery step2 = Mockito.mock(JPAQuery.class);
+        Mockito.when(queryFactory.selectFrom(any())).thenReturn(step1);
+        Mockito.when(step1.where(any(Predicate.class))).thenReturn(step2);
+        Mockito.when(step2.fetch()).thenReturn(Lists.newArrayList(new ArrayList()));
+
         String originalFilename = "testImage1.jpeg";
         MockMultipartFile file = new MockMultipartFile("multipartFile",
             originalFilename,
@@ -245,7 +289,7 @@ class ObjectServiceTest {
         Mockito.when(objectRepository.save(any(Object.class))).then(returnsFirstArg());
 
         // when
-        Object newFile = objectService.createFile(fileRequestDto);
+        ObjectResponseDto newFile = objectService.createFile(fileRequestDto);
 
         // then
         Assertions.assertEquals(newFile.getName(), originalFilename);
@@ -254,8 +298,63 @@ class ObjectServiceTest {
         Assertions.assertEquals(newFile.getBucketName(), "test-bucket");
         Assertions.assertEquals((int) Math.round(newFile.getSize()), 2);
         Assertions.assertEquals(newFile.getIsFolder(), false);
+        Assertions.assertEquals(newFile.getCode(), 0);
+        Assertions.assertEquals(newFile.getMsg(), "정상적으로 처리되었습니다.");
 
         verify(amazonS3).putObject(any(PutObjectRequest.class));
         verify(objectRepository).save(any(Object.class));
+        verify(queryFactory).selectFrom(any());
+        verify(step1).where(any(Predicate.class));
+        verify(step2).fetch();
     }
+
+    @Test
+    @DisplayName("파일 경로 중복 테스트")
+    void duplicateFilePathTest() throws IOException {
+        // given
+        JPAQuery step1 = Mockito.mock(JPAQuery.class);
+        JPAQuery step2 = Mockito.mock(JPAQuery.class);
+
+        Object objectWithPath = Object.builder()
+            .id(1L)
+            .name("textFile.txt")
+            .path("textFile.txt")
+            .parentPath("")
+            .bucketName("test-bucket")
+            .size(1.0)
+            .isFolder(false)
+            .build();
+
+        Mockito.when(queryFactory.selectFrom(any())).thenReturn(step1);
+        Mockito.when(step1.where(any(Predicate.class))).thenReturn(step2);
+        Mockito.when(step2.fetch()).thenReturn(Lists.newArrayList(objectWithPath));
+
+        MultipartFile multipartFile = Mockito.mock(MultipartFile.class);
+        Mockito.when(multipartFile.getContentType()).thenReturn("text/plain");
+        Mockito.when(multipartFile.getOriginalFilename()).thenReturn("textFile.txt");
+        String text = "This is sample text.";
+        InputStream inputStream = new ByteArrayInputStream(text.getBytes());
+        Mockito.when(multipartFile.getSize()).thenReturn((long) text.getBytes().length);
+        Mockito.when(multipartFile.getInputStream()).thenReturn(inputStream);
+
+        FileRequestDto fileRequestDto = FileRequestDto.builder()
+            .multipartFile(multipartFile)
+            .parentPath("")
+            .bucketName("test-bucket")
+            .build();
+
+        // when
+        ObjectResponseDto objectResponseDto = objectService.createFile(fileRequestDto);
+
+        // then
+        Assertions.assertNull(objectResponseDto.getName());
+        Assertions.assertEquals(objectResponseDto.getCode(), -1);
+        Assertions.assertEquals(objectResponseDto.getMsg(), "이미 존재하는 파일 또는 폴더입니다.");
+
+        verify(queryFactory).selectFrom(any());
+        verify(step1).where(any(Predicate.class));
+        verify(step2).fetch();
+    }
+
+
 }

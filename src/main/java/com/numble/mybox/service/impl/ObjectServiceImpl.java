@@ -5,8 +5,10 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.numble.mybox.common.CommonResponse;
 import com.numble.mybox.data.dto.FileRequestDto;
 import com.numble.mybox.data.dto.ObjectRequestDto;
+import com.numble.mybox.data.dto.ObjectResponseDto;
 import com.numble.mybox.data.entity.Object;
 import com.numble.mybox.data.entity.QObject;
 import com.numble.mybox.data.repository.ObjectRepository;
@@ -42,18 +44,24 @@ public class ObjectServiceImpl implements ObjectService {
     public List<Object> getObjects(String bucketName, String parentPath) {
         QObject qObject = QObject.object;
 
-        List<Object> objectList = queryFactory.selectFrom(qObject)
+        List<Object> objects = queryFactory.selectFrom(qObject)
             .where(
                 qObject.bucketName.eq(bucketName).and(qObject.parentPath.eq(parentPath))
             )
             .fetch();
 
-        return objectList;
+        return objects;
     }
 
     @Override
-    public Object createFolder(ObjectRequestDto objectRequestDto) {
+    public ObjectResponseDto createFolder(ObjectRequestDto objectRequestDto) {
         String path = objectRequestDto.getParentPath() + objectRequestDto.getName();
+        if(isDuplicatePath(path)) {
+            ObjectResponseDto objectResponseDto = new ObjectResponseDto();
+            setDuplicatePathErrorResult(objectResponseDto);
+            return objectResponseDto;
+        }
+
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentLength(0L);
         objectMetadata.setContentType("application/x-directory");
@@ -71,18 +79,24 @@ public class ObjectServiceImpl implements ObjectService {
             .isFolder(true)
             .build();
 
-        Object savedFolder = objectRepository.save(newFolder);
-        return savedFolder;
+        ObjectResponseDto objectResponseDto = objectToObjectResponseDto(objectRepository.save(newFolder));
+        setSuccessResult(objectResponseDto);
+        return objectResponseDto;
     }
 
     @Override
-    public Object createFile(FileRequestDto fileRequestDto) throws IOException {
+    public ObjectResponseDto createFile(FileRequestDto fileRequestDto) throws IOException {
         MultipartFile multipartFile = fileRequestDto.getMultipartFile();
         String contentType = multipartFile.getContentType();
         String fileName = Normalizer.normalize(multipartFile.getOriginalFilename(), Normalizer.Form.NFC);
 
         // byte[] file = ImageUtils.compressImage(fileRequestDto.getMultipartFile().getBytes())
         String path = fileRequestDto.getParentPath() + fileName;
+        if(isDuplicatePath(path)) {
+            ObjectResponseDto objectResponseDto = new ObjectResponseDto();
+            setDuplicatePathErrorResult(objectResponseDto);
+            return objectResponseDto;
+        }
 
         ObjectMetadata objectMetadata = new ObjectMetadata();
         // long fileSize = file.length;
@@ -107,8 +121,9 @@ public class ObjectServiceImpl implements ObjectService {
             .isFolder(false)
             .build();
 
-        Object savedFile = objectRepository.save(newFile);
-        return savedFile;
+        ObjectResponseDto objectResponseDto = objectToObjectResponseDto(objectRepository.save(newFile));
+        setSuccessResult(objectResponseDto);
+        return objectResponseDto;
     }
 
     private void S3PutObject(PutObjectRequest putObjectRequest, String objectName) {
@@ -120,6 +135,43 @@ public class ObjectServiceImpl implements ObjectService {
         } catch (SdkClientException e) {
             e.printStackTrace();
         }
+    }
+
+    private boolean isDuplicatePath(String path) {
+        QObject qObject = QObject.object;
+        List<Object> objectWithPath = queryFactory.selectFrom(qObject)
+            .where(qObject.path.eq(path))
+            .fetch();
+
+        if(objectWithPath.size() > 0) {
+            return true;
+        }
+        return false;
+    }
+
+    private ObjectResponseDto objectToObjectResponseDto(Object object) {
+        ObjectResponseDto objectResponseDto = ObjectResponseDto.builder()
+            .name(object.getName())
+            .path(object.getPath())
+            .parentPath(object.getParentPath())
+            .bucketName(object.getBucketName())
+            .size(object.getSize())
+            .isFolder(object.getIsFolder())
+            .build();
+
+        return objectResponseDto;
+    }
+
+    private void setSuccessResult(ObjectResponseDto result) {
+        result.setSuccess(true);
+        result.setCode(CommonResponse.SUCCESS.getCode());
+        result.setMsg("정상적으로 처리되었습니다.");
+    }
+
+    private void setDuplicatePathErrorResult(ObjectResponseDto result) {
+        result.setSuccess(false);
+        result.setCode(CommonResponse.FAIL.getCode());
+        result.setMsg("이미 존재하는 파일 또는 폴더입니다.");
     }
 
 }

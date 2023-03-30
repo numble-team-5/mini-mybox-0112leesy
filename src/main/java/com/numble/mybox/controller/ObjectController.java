@@ -2,6 +2,7 @@ package com.numble.mybox.controller;
 
 import com.numble.mybox.data.dto.FileRequestDto;
 import com.numble.mybox.data.dto.ObjectRequestDto;
+import com.numble.mybox.data.dto.ObjectResponseDto;
 import com.numble.mybox.data.entity.Object;
 import com.numble.mybox.service.ObjectService;
 import java.io.IOException;
@@ -41,18 +42,16 @@ public class ObjectController {
     }
 
     @PostMapping("/folder")
-    public ResponseEntity<Object> createFolder(@ModelAttribute ObjectRequestDto objectRequestDto) {
+    public ResponseEntity<ObjectResponseDto> createFolder(@ModelAttribute ObjectRequestDto objectRequestDto) {
 
-        Object newObject = objectService.createFolder(objectRequestDto);
-        return ResponseEntity.ok().body(newObject);
+        return ResponseEntity.ok().body(objectService.createFolder(objectRequestDto));
     }
 
     @PostMapping("/file")
-    public ResponseEntity<Object> createFile(@ModelAttribute FileRequestDto fileRequestDto)
+    public ResponseEntity<ObjectResponseDto> createFile(@ModelAttribute FileRequestDto fileRequestDto)
         throws IOException {
 
-        Object newObject = objectService.createFile(fileRequestDto);
-        return ResponseEntity.ok().body(newObject);
+        return ResponseEntity.ok().body(objectService.createFile(fileRequestDto));
     }
 
 }
