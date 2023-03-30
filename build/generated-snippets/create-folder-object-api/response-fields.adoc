@@ -1,10 +1,6 @@
 |===
 |Path|Type|Description
 
-|`+id+`
-|`+Number+`
-|인덱스
-
 |`+name+`
 |`+String+`
 |폴더 이름
@@ -28,5 +24,17 @@
 |`+isFolder+`
 |`+Boolean+`
 |폴더 여부
+
+|`+success+`
+|`+Boolean+`
+|성공여부
+
+|`+code+`
+|`+Number+`
+|코드
+
+|`+msg+`
+|`+String+`
+|메시지
 
 |===

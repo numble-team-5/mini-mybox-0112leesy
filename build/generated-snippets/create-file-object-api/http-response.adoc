@@ -8,15 +8,17 @@ Cache-Control: no-cache, no-store, max-age=0, must-revalidate
 Pragma: no-cache
 Expires: 0
 X-Frame-Options: DENY
-Content-Length: 173
+Content-Length: 249
 
 {
-  "id" : 1,
-  "path" : "testImage1.jpeg",
-  "parentPath" : "",
   "name" : "testImage1.jpeg",
+  "path" : "testImage1.jpeg",
   "bucketName" : "test-bucket",
+  "parentPath" : "",
   "size" : 2.3,
-  "isFolder" : false
+  "isFolder" : false,
+  "success" : true,
+  "code" : 0,
+  "msg" : "정상적으로 처리되었습니다."
 }
 ----

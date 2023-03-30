@@ -38,7 +38,7 @@ public class BucketServiceImpl implements BucketService {
                 amazonS3.createBucket(bucketName);
                 Bucket bucket = Bucket.builder()
                     .bucketName(bucketName)
-                    .remain(30.0)
+                    .capacity(30.0)
                     .build();
                 bucketRepository.save(bucket);
                 LOGGER.info(String.format("Bucket [%s] has been created.\n", bucketName));
@@ -65,7 +65,7 @@ public class BucketServiceImpl implements BucketService {
                 LOGGER.info(String.format("Bucket [%s] assigned to User [%s].\n", bucketName, username));
                 bucketResponseDto.setBucketName(savedBucket.getBucketName());
                 bucketResponseDto.setUsername(savedBucket.getUsername());
-                bucketResponseDto.setRemain(savedBucket.getRemain());
+                bucketResponseDto.setRemain(savedBucket.getCapacity());
             }
         } catch (AmazonS3Exception e) {
             e.printStackTrace();

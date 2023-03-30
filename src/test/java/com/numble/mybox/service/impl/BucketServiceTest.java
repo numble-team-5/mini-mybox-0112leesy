@@ -1,6 +1,5 @@
 package com.numble.mybox.service.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -71,7 +70,7 @@ class BucketServiceTest {
         Mockito.when(amazonS3.doesBucketExistV2(BUCKET_NAME))
             .thenReturn(true);
         Mockito.when(bucketRepository.getByBucketName(BUCKET_NAME))
-            .thenReturn(Bucket.builder().bucketName(BUCKET_NAME).remain(30.0).build());
+            .thenReturn(Bucket.builder().bucketName(BUCKET_NAME).capacity(30.0).build());
         Mockito.when(bucketRepository.save(any(Bucket.class))).then(returnsFirstArg());
 
         // when

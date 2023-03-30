@@ -8,15 +8,17 @@ Cache-Control: no-cache, no-store, max-age=0, must-revalidate
 Pragma: no-cache
 Expires: 0
 X-Frame-Options: DENY
-Content-Length: 202
+Content-Length: 278
 
 {
-  "id" : 1,
-  "path" : "folder-depth-1/folder-depth-2/",
-  "parentPath" : "folder-depth-1/",
   "name" : "folder-depth-2/",
+  "path" : "folder-depth-1/folder-depth-2/",
   "bucketName" : "test-bucket",
+  "parentPath" : "folder-depth-1/",
   "size" : 0.0,
-  "isFolder" : true
+  "isFolder" : true,
+  "success" : true,
+  "code" : 0,
+  "msg" : "정상적으로 처리되었습니다."
 }
 ----

@@ -26,6 +26,6 @@ public class Bucket {
     private String bucketName;
 
     @Column(nullable = false)
-    private Double remain;
+    private Double capacity;
 
 }
