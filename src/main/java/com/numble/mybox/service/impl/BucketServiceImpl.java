@@ -45,33 +45,61 @@ public class BucketServiceImpl implements BucketService {
             }
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
-        } catch(SdkClientException e) {
+        } catch (SdkClientException e) {
             e.printStackTrace();
         }
         return bucketName;
     }
 
     @Override
-    public BucketResponseDto assignBucket(String username, String bucketName) throws RuntimeException {
-        BucketResponseDto bucketResponseDto = new BucketResponseDto();
-        try {
-            if (!amazonS3.doesBucketExistV2(bucketName)) {
-                LOGGER.info(String.format("Bucket [%s] not found.\n", bucketName));
-                throw new RuntimeException();
-            } else {
-                Bucket bucket = bucketRepository.getByBucketName(bucketName);
-                bucket.setUsername(username);
-                Bucket savedBucket = bucketRepository.save(bucket);
-                LOGGER.info(String.format("Bucket [%s] assigned to User [%s].\n", bucketName, username));
-                bucketResponseDto.setBucketName(savedBucket.getBucketName());
-                bucketResponseDto.setUsername(savedBucket.getUsername());
-                bucketResponseDto.setRemain(savedBucket.getCapacity());
-            }
-        } catch (AmazonS3Exception e) {
-            e.printStackTrace();
-        } catch(SdkClientException e) {
-            e.printStackTrace();
+    public BucketResponseDto assignBucket(String username, String bucketName) {
+        Bucket bucket = bucketRepository.getByBucketName(bucketName);
+        bucket.setUsername(username);
+        Bucket savedBucket = bucketRepository.save(bucket);
+        LOGGER.info(
+            String.format("Bucket [%s] assigned to User [%s].\n", bucketName, username));
+        BucketResponseDto bucketResponseDto = bucketToBucketResponseDto(savedBucket);
+        return bucketResponseDto;
+    }
+
+    @Override
+    public boolean isCapacityEnough(String bucketName, Double size) {
+        Bucket bucket = bucketRepository.getByBucketName(bucketName);
+        if (bucket.getCapacity() >= size) {
+            return true;
         }
+        return false;
+    }
+
+    @Override
+    public BucketResponseDto increaseCapacity(String bucketName, Double size) {
+        Bucket bucket = bucketRepository.getByBucketName(bucketName);
+        bucket.setCapacity(bucket.getCapacity() + size);
+        Bucket savedBucket = bucketRepository.save(bucket);
+        LOGGER.info(
+            String.format("Bucket [%s] capacity increased %f.\n", bucketName, size));
+        BucketResponseDto bucketResponseDto = bucketToBucketResponseDto(savedBucket);
+        return bucketResponseDto;
+    }
+
+    @Override
+    public BucketResponseDto decreaseCapacity(String bucketName, Double size) {
+        Bucket bucket = bucketRepository.getByBucketName(bucketName);
+        bucket.setCapacity(bucket.getCapacity() - size);
+        Bucket savedBucket = bucketRepository.save(bucket);
+        LOGGER.info(
+            String.format("Bucket [%s] capacity decreased %f.\n", bucketName, size));
+        BucketResponseDto bucketResponseDto = bucketToBucketResponseDto(savedBucket);
+        return bucketResponseDto;
+    }
+
+    private BucketResponseDto bucketToBucketResponseDto(Bucket bucket) {
+        BucketResponseDto bucketResponseDto = BucketResponseDto.builder()
+            .username(bucket.getUsername())
+            .bucketName(bucket.getBucketName())
+            .capacity(bucket.getCapacity())
+            .build();
+
         return bucketResponseDto;
     }
 

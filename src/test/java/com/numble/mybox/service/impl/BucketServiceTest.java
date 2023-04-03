@@ -67,8 +67,6 @@ class BucketServiceTest {
     @DisplayName("버킷지정 성공 테스트")
     void assignBucketSuccessTest() {
         // given
-        Mockito.when(amazonS3.doesBucketExistV2(BUCKET_NAME))
-            .thenReturn(true);
         Mockito.when(bucketRepository.getByBucketName(BUCKET_NAME))
             .thenReturn(Bucket.builder().bucketName(BUCKET_NAME).capacity(30.0).build());
         Mockito.when(bucketRepository.save(any(Bucket.class))).then(returnsFirstArg());
@@ -79,23 +77,82 @@ class BucketServiceTest {
         // then
         Assertions.assertEquals(bucketResponseDto.getUsername(), USERNAME);
         Assertions.assertEquals(bucketResponseDto.getBucketName(), BUCKET_NAME);
-        Assertions.assertEquals(bucketResponseDto.getRemain(), 30.0);
+        Assertions.assertEquals(bucketResponseDto.getCapacity(), 30.0);
 
-        verify(amazonS3).doesBucketExistV2(BUCKET_NAME);
+        verify(bucketRepository).getByBucketName(BUCKET_NAME);
+        verify(bucketRepository).save(any(Bucket.class));
     }
 
     @Test
-    @DisplayName("버킷지정 실패 테스트")
-    void assignBucketFailTest() {
+    @DisplayName("버킷 용량 충분 테스트")
+    void isCapacityEnoughTest() {
         // given
-        Mockito.when(amazonS3.doesBucketExistV2(BUCKET_NAME))
-            .thenReturn(false);
+        Mockito.when(bucketRepository.getByBucketName(BUCKET_NAME))
+            .thenReturn(Bucket.builder().username(USERNAME).bucketName(BUCKET_NAME).capacity(20.0).build());
 
         // when
-        Assertions.assertThrows(RuntimeException.class, () -> {
-            bucketService.assignBucket(USERNAME, BUCKET_NAME);
-        });
+        boolean capacityTest1 = bucketService.isCapacityEnough(BUCKET_NAME, 5.0);
 
-        verify(amazonS3).doesBucketExistV2(BUCKET_NAME);
+        // then
+        Assertions.assertTrue(capacityTest1);
+
+        verify(bucketRepository).getByBucketName(BUCKET_NAME);
     }
+
+    @Test
+    @DisplayName("버킷 용량 부족 테스트")
+    void isCapacityNotEnoughTest() {
+        // given
+        Mockito.when(bucketRepository.getByBucketName(BUCKET_NAME))
+            .thenReturn(Bucket.builder().username(USERNAME).bucketName(BUCKET_NAME).capacity(20.0).build());
+
+        // when
+        boolean capacityTest2 = bucketService.isCapacityEnough(BUCKET_NAME, 30.0);
+
+        // then
+        Assertions.assertFalse(capacityTest2);
+
+        verify(bucketRepository).getByBucketName(BUCKET_NAME);
+    }
+
+    @Test
+    @DisplayName("버킷 용량 증가 테스트")
+    void increaseCapacityTest() {
+        // given
+        Mockito.when(bucketRepository.getByBucketName(BUCKET_NAME))
+            .thenReturn(Bucket.builder().username(USERNAME).bucketName(BUCKET_NAME).capacity(20.0).build());
+        Mockito.when(bucketRepository.save(any(Bucket.class))).then(returnsFirstArg());
+
+        // when
+        BucketResponseDto bucketResponseDto = bucketService.increaseCapacity(BUCKET_NAME, 5.0);
+
+        // then
+        Assertions.assertEquals(bucketResponseDto.getUsername(), USERNAME);
+        Assertions.assertEquals(bucketResponseDto.getBucketName(), BUCKET_NAME);
+        Assertions.assertEquals(bucketResponseDto.getCapacity(), 25.0);
+
+        verify(bucketRepository).getByBucketName(BUCKET_NAME);
+        verify(bucketRepository).save(any(Bucket.class));
+    }
+
+    @Test
+    @DisplayName("버킷 용량 감소 테스트")
+    void decreaseCapacityTest() {
+        // given
+        Mockito.when(bucketRepository.getByBucketName(BUCKET_NAME))
+            .thenReturn(Bucket.builder().username(USERNAME).bucketName(BUCKET_NAME).capacity(20.0).build());
+        Mockito.when(bucketRepository.save(any(Bucket.class))).then(returnsFirstArg());
+
+        // when
+        BucketResponseDto bucketResponseDto = bucketService.decreaseCapacity(BUCKET_NAME, 5.0);
+
+        // then
+        Assertions.assertEquals(bucketResponseDto.getUsername(), USERNAME);
+        Assertions.assertEquals(bucketResponseDto.getBucketName(), BUCKET_NAME);
+        Assertions.assertEquals(bucketResponseDto.getCapacity(), 15.0);
+
+        verify(bucketRepository).getByBucketName(BUCKET_NAME);
+        verify(bucketRepository).save(any(Bucket.class));
+    }
+
 }

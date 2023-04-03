@@ -13,6 +13,6 @@ public class BucketResponseDto {
 
     private String username;
     private String bucketName;
-    private Double remain;
+    private Double capacity;
 
 }
