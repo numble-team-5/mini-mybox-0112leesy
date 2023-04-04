@@ -10,10 +10,9 @@ import com.numble.mybox.data.dto.FileRequestDto;
 import com.numble.mybox.data.dto.ObjectRequestDto;
 import com.numble.mybox.data.dto.ObjectResponseDto;
 import com.numble.mybox.data.entity.Object;
-import com.numble.mybox.data.entity.QObject;
 import com.numble.mybox.data.repository.ObjectRepository;
+import com.numble.mybox.service.BucketService;
 import com.numble.mybox.service.ObjectService;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.text.Normalizer;
@@ -29,34 +28,28 @@ public class ObjectServiceImpl implements ObjectService {
 
     private final Logger LOGGER = LoggerFactory.getLogger(ObjectServiceImpl.class);
     private final AmazonS3 amazonS3;
+    private final BucketService bucketService;
     private final ObjectRepository objectRepository;
-    private final JPAQueryFactory queryFactory;
+    // private final JPAQueryFactory queryFactory;
 
     @Autowired
-    public ObjectServiceImpl(AmazonS3 amazonS3, ObjectRepository objectRepository,
-        JPAQueryFactory queryFactory) {
+    public ObjectServiceImpl(AmazonS3 amazonS3, BucketService bucketService,
+        ObjectRepository objectRepository) {
         this.amazonS3 = amazonS3;
+        this.bucketService = bucketService;
         this.objectRepository = objectRepository;
-        this.queryFactory = queryFactory;
     }
 
     @Override
     public List<Object> getObjects(String bucketName, String parentPath) {
-        QObject qObject = QObject.object;
-
-        List<Object> objects = queryFactory.selectFrom(qObject)
-            .where(
-                qObject.bucketName.eq(bucketName).and(qObject.parentPath.eq(parentPath))
-            )
-            .fetch();
-
+        List<Object> objects = objectRepository.findByBucketNameAndParentPath(bucketName, parentPath);
         return objects;
     }
 
     @Override
     public ObjectResponseDto createFolder(ObjectRequestDto objectRequestDto) {
         String path = objectRequestDto.getParentPath() + objectRequestDto.getName();
-        if(isDuplicatePath(path)) {
+        if(isDuplicatePath(objectRequestDto.getBucketName(), path)) {
             ObjectResponseDto objectResponseDto = new ObjectResponseDto();
             setDuplicatePathErrorResult(objectResponseDto);
             return objectResponseDto;
@@ -89,17 +82,14 @@ public class ObjectServiceImpl implements ObjectService {
         MultipartFile multipartFile = fileRequestDto.getMultipartFile();
         String contentType = multipartFile.getContentType();
         String fileName = Normalizer.normalize(multipartFile.getOriginalFilename(), Normalizer.Form.NFC);
-
-        // byte[] file = ImageUtils.compressImage(fileRequestDto.getMultipartFile().getBytes())
         String path = fileRequestDto.getParentPath() + fileName;
-        if(isDuplicatePath(path)) {
-            ObjectResponseDto objectResponseDto = new ObjectResponseDto();
+
+        ObjectResponseDto objectResponseDto = new ObjectResponseDto();
+        if(isDuplicatePath(fileRequestDto.getBucketName(), path)) {
             setDuplicatePathErrorResult(objectResponseDto);
             return objectResponseDto;
         }
-
         ObjectMetadata objectMetadata = new ObjectMetadata();
-        // long fileSize = file.length;
         long fileSize = multipartFile.getSize();
         System.out.format("Object %s has been created.\n", fileName);
         objectMetadata.setContentLength(fileSize);
@@ -107,10 +97,17 @@ public class ObjectServiceImpl implements ObjectService {
         System.out.format("File size : %.2f mb\n", fileSizeMb);
         objectMetadata.setContentType(contentType);
 
+        if(!bucketService.isCapacityEnough(fileRequestDto.getBucketName(), fileSizeMb)) {
+            setCapacityNotEnoughResult(objectResponseDto);
+            return objectResponseDto;
+        }
+
         PutObjectRequest putObjectRequest = new PutObjectRequest(fileRequestDto.getBucketName(),
             path, multipartFile.getInputStream(), objectMetadata);
 
         S3PutObject(putObjectRequest, fileName);
+
+        bucketService.decreaseCapacity(fileRequestDto.getBucketName(), fileSizeMb);
 
         Object newFile = Object.builder()
             .bucketName(fileRequestDto.getBucketName())
@@ -121,7 +118,7 @@ public class ObjectServiceImpl implements ObjectService {
             .isFolder(false)
             .build();
 
-        ObjectResponseDto objectResponseDto = objectToObjectResponseDto(objectRepository.save(newFile));
+        objectResponseDto = objectToObjectResponseDto(objectRepository.save(newFile));
         setSuccessResult(objectResponseDto);
         return objectResponseDto;
     }
@@ -137,12 +134,8 @@ public class ObjectServiceImpl implements ObjectService {
         }
     }
 
-    private boolean isDuplicatePath(String path) {
-        QObject qObject = QObject.object;
-        List<Object> objectWithPath = queryFactory.selectFrom(qObject)
-            .where(qObject.path.eq(path))
-            .fetch();
-
+    private boolean isDuplicatePath(String bucketName, String path) {
+        List<Object> objectWithPath = objectRepository.findByBucketNameAndPath(bucketName, path);
         if(objectWithPath.size() > 0) {
             return true;
         }
@@ -172,6 +165,12 @@ public class ObjectServiceImpl implements ObjectService {
         result.setSuccess(false);
         result.setCode(CommonResponse.FAIL.getCode());
         result.setMsg("이미 존재하는 파일 또는 폴더입니다.");
+    }
+
+    private void setCapacityNotEnoughResult(ObjectResponseDto result) {
+        result.setSuccess(false);
+        result.setCode(CommonResponse.FAIL.getCode());
+        result.setMsg("사용 가능한 용량이 충분하지 않습니다.");
     }
 
 }

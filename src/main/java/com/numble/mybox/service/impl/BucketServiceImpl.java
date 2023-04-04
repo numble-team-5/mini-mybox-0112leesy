@@ -29,20 +29,17 @@ public class BucketServiceImpl implements BucketService {
     @Override
     public String createBucket() throws RuntimeException {
         String bucketName = UUID.randomUUID().toString();
+        errorIfBucketExists(bucketName);
+
+        // create bucket if the bucket name does not exist
         try {
-            // create bucket if the bucket name does not exist
-            if (amazonS3.doesBucketExistV2(bucketName)) {
-                LOGGER.info(String.format("Bucket [%s] already exists.\n", bucketName));
-                throw new RuntimeException();
-            } else {
-                amazonS3.createBucket(bucketName);
-                Bucket bucket = Bucket.builder()
-                    .bucketName(bucketName)
-                    .capacity(30.0)
-                    .build();
-                bucketRepository.save(bucket);
-                LOGGER.info(String.format("Bucket [%s] has been created.\n", bucketName));
-            }
+            amazonS3.createBucket(bucketName);
+            Bucket bucket = Bucket.builder()
+                .bucketName(bucketName)
+                .capacity(30.0)
+                .build();
+            bucketRepository.save(bucket);
+            LOGGER.info(String.format("Bucket [%s] has been created.\n", bucketName));
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
         } catch (SdkClientException e) {
@@ -52,7 +49,8 @@ public class BucketServiceImpl implements BucketService {
     }
 
     @Override
-    public BucketResponseDto assignBucket(String username, String bucketName) {
+    public BucketResponseDto assignBucket(String username, String bucketName) throws RuntimeException {
+        errorIfBucketNotExists(bucketName);
         Bucket bucket = bucketRepository.getByBucketName(bucketName);
         bucket.setUsername(username);
         Bucket savedBucket = bucketRepository.save(bucket);
@@ -64,6 +62,7 @@ public class BucketServiceImpl implements BucketService {
 
     @Override
     public boolean isCapacityEnough(String bucketName, Double size) {
+        errorIfBucketNotExists(bucketName);
         Bucket bucket = bucketRepository.getByBucketName(bucketName);
         if (bucket.getCapacity() >= size) {
             return true;
@@ -73,6 +72,7 @@ public class BucketServiceImpl implements BucketService {
 
     @Override
     public BucketResponseDto increaseCapacity(String bucketName, Double size) {
+        errorIfBucketNotExists(bucketName);
         Bucket bucket = bucketRepository.getByBucketName(bucketName);
         bucket.setCapacity(bucket.getCapacity() + size);
         Bucket savedBucket = bucketRepository.save(bucket);
@@ -84,6 +84,7 @@ public class BucketServiceImpl implements BucketService {
 
     @Override
     public BucketResponseDto decreaseCapacity(String bucketName, Double size) {
+        errorIfBucketNotExists(bucketName);
         Bucket bucket = bucketRepository.getByBucketName(bucketName);
         bucket.setCapacity(bucket.getCapacity() - size);
         Bucket savedBucket = bucketRepository.save(bucket);
@@ -101,6 +102,20 @@ public class BucketServiceImpl implements BucketService {
             .build();
 
         return bucketResponseDto;
+    }
+
+    private void errorIfBucketExists(String bucketName) throws RuntimeException {
+        if (amazonS3.doesBucketExistV2(bucketName)) {
+            LOGGER.info(String.format("Bucket [%s] already exists.\n", bucketName));
+            throw new RuntimeException();
+        }
+    }
+
+    private void errorIfBucketNotExists(String bucketName) throws RuntimeException {
+        if (!amazonS3.doesBucketExistV2(bucketName)) {
+            LOGGER.info(String.format("Bucket [%s] doesn't exist.\n", bucketName));
+            throw new RuntimeException();
+        }
     }
 
 }
