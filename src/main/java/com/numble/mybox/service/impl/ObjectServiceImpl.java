@@ -42,16 +42,24 @@ public class ObjectServiceImpl implements ObjectService {
 
     @Override
     public List<Object> getObjects(String bucketName, String parentPath) {
-        List<Object> objects = objectRepository.findByBucketNameAndParentPath(bucketName, parentPath);
+        List<Object> objects = objectRepository.findByBucketNameAndParentPath(bucketName,
+            parentPath);
         return objects;
     }
 
     @Override
     public ObjectResponseDto createFolder(ObjectRequestDto objectRequestDto) {
         String path = objectRequestDto.getParentPath() + objectRequestDto.getName();
-        if(isDuplicatePath(objectRequestDto.getBucketName(), path)) {
+        if (doesPathExist(objectRequestDto.getBucketName(), path)) {
             ObjectResponseDto objectResponseDto = new ObjectResponseDto();
             setDuplicatePathErrorResult(objectResponseDto);
+            return objectResponseDto;
+        }
+
+        if (!objectRequestDto.getParentPath().isEmpty() && !doesPathExist(
+            objectRequestDto.getBucketName(), objectRequestDto.getParentPath())) {
+            ObjectResponseDto objectResponseDto = new ObjectResponseDto();
+            setParentPathNotFoundResult(objectResponseDto);
             return objectResponseDto;
         }
 
@@ -72,7 +80,8 @@ public class ObjectServiceImpl implements ObjectService {
             .isFolder(true)
             .build();
 
-        ObjectResponseDto objectResponseDto = objectToObjectResponseDto(objectRepository.save(newFolder));
+        ObjectResponseDto objectResponseDto = objectToObjectResponseDto(
+            objectRepository.save(newFolder));
         setSuccessResult(objectResponseDto);
         return objectResponseDto;
     }
@@ -81,14 +90,22 @@ public class ObjectServiceImpl implements ObjectService {
     public ObjectResponseDto createFile(FileRequestDto fileRequestDto) throws IOException {
         MultipartFile multipartFile = fileRequestDto.getMultipartFile();
         String contentType = multipartFile.getContentType();
-        String fileName = Normalizer.normalize(multipartFile.getOriginalFilename(), Normalizer.Form.NFC);
+        String fileName = Normalizer.normalize(multipartFile.getOriginalFilename(),
+            Normalizer.Form.NFC);
         String path = fileRequestDto.getParentPath() + fileName;
 
         ObjectResponseDto objectResponseDto = new ObjectResponseDto();
-        if(isDuplicatePath(fileRequestDto.getBucketName(), path)) {
+        if (doesPathExist(fileRequestDto.getBucketName(), path)) {
             setDuplicatePathErrorResult(objectResponseDto);
             return objectResponseDto;
         }
+
+        if (!fileRequestDto.getParentPath().isEmpty() && !doesPathExist(
+            fileRequestDto.getBucketName(), fileRequestDto.getParentPath())) {
+            setParentPathNotFoundResult(objectResponseDto);
+            return objectResponseDto;
+        }
+
         ObjectMetadata objectMetadata = new ObjectMetadata();
         long fileSize = multipartFile.getSize();
         System.out.format("Object %s has been created.\n", fileName);
@@ -97,7 +114,7 @@ public class ObjectServiceImpl implements ObjectService {
         System.out.format("File size : %.2f mb\n", fileSizeMb);
         objectMetadata.setContentType(contentType);
 
-        if(!bucketService.isCapacityEnough(fileRequestDto.getBucketName(), fileSizeMb)) {
+        if (!bucketService.isCapacityEnough(fileRequestDto.getBucketName(), fileSizeMb)) {
             setCapacityNotEnoughResult(objectResponseDto);
             return objectResponseDto;
         }
@@ -134,9 +151,9 @@ public class ObjectServiceImpl implements ObjectService {
         }
     }
 
-    private boolean isDuplicatePath(String bucketName, String path) {
+    private boolean doesPathExist(String bucketName, String path) {
         List<Object> objectWithPath = objectRepository.findByBucketNameAndPath(bucketName, path);
-        if(objectWithPath.size() > 0) {
+        if (objectWithPath.size() > 0) {
             return true;
         }
         return false;
@@ -171,6 +188,12 @@ public class ObjectServiceImpl implements ObjectService {
         result.setSuccess(false);
         result.setCode(CommonResponse.FAIL.getCode());
         result.setMsg("사용 가능한 용량이 충분하지 않습니다.");
+    }
+
+    private void setParentPathNotFoundResult(ObjectResponseDto result) {
+        result.setSuccess(false);
+        result.setCode(CommonResponse.FAIL.getCode());
+        result.setMsg("상위 폴더가 존재하지 않습니다.");
     }
 
 }

@@ -135,6 +135,8 @@ class ObjectServiceTest {
         // given
         Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket", "depth-1/depth-2/"))
             .thenReturn(new ArrayList());
+        Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket", "depth-1/"))
+            .thenReturn(Lists.newArrayList(new Object()));
 
         ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
             .name("depth-2/")
@@ -159,6 +161,7 @@ class ObjectServiceTest {
 
         verify(objectRepository).save(any(Object.class));
         verify(objectRepository).findByBucketNameAndPath("test-bucket","depth-1/depth-2/");
+        verify(objectRepository).findByBucketNameAndPath("test-bucket", "depth-1/");
     }
 
     @Test
@@ -247,6 +250,8 @@ class ObjectServiceTest {
         // given
         Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket","depth-1/testImage1.jpeg"))
             .thenReturn(new ArrayList());
+        Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket", "depth-1/"))
+            .thenReturn(Lists.newArrayList(new Object()));
 
         String originalFilename = "testImage1.jpeg";
         MockMultipartFile file = new MockMultipartFile("multipartFile",
@@ -281,6 +286,7 @@ class ObjectServiceTest {
         verify(bucketService).isCapacityEnough(any(), any());
         verify(bucketService).decreaseCapacity(any(), any());
         verify(objectRepository).findByBucketNameAndPath("test-bucket","depth-1/testImage1.jpeg");
+        verify(objectRepository).findByBucketNameAndPath("test-bucket", "depth-1/");
     }
 
     @Test
@@ -323,6 +329,33 @@ class ObjectServiceTest {
         Assertions.assertEquals(objectResponseDto.getMsg(), "이미 존재하는 파일 또는 폴더입니다.");
 
         verify(objectRepository).findByBucketNameAndPath("test-bucket", "textFile.txt");
+    }
+
+    @Test
+    @DisplayName("상위 폴더 없음 테스트")
+    void parentPathNotFoundTest() throws IOException {
+        // given
+        Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket", "depth-1/depth-2/"))
+            .thenReturn(new ArrayList());
+        Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket", "depth-1/"))
+            .thenReturn(new ArrayList());
+
+        ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
+            .name("depth-2/")
+            .parentPath("depth-1/")
+            .bucketName("test-bucket")
+            .build();
+
+        // when
+        ObjectResponseDto objectResponseDto = objectService.createFolder(objectRequestDto);
+
+        // then
+        Assertions.assertNull(objectResponseDto.getName());
+        Assertions.assertEquals(objectResponseDto.getCode(), -1);
+        Assertions.assertEquals(objectResponseDto.getMsg(), "상위 폴더가 존재하지 않습니다.");
+
+        verify(objectRepository).findByBucketNameAndPath("test-bucket", "depth-1/depth-2/");
+        verify(objectRepository).findByBucketNameAndPath("test-bucket", "depth-1/");
     }
 
     @Test
