@@ -1,0 +1,36 @@
+|===
+|Path|Type|Description
+
+|`+data[0].id+`
+|`+Number+`
+|인덱스
+
+|`+data[0].name+`
+|`+String+`
+|파일/폴더 이름
+
+|`+data[0].name+`
+|`+String+`
+|파일/폴더 이름
+
+|`+data[0].fullName+`
+|`+String+`
+|경로
+
+|`+data[0].parentFullName+`
+|`+String+`
+|상위 폴더 경로
+
+|`+data[0].bucketName+`
+|`+String+`
+|버킷이름
+
+|`+data[0].size+`
+|`+Number+`
+|용량
+
+|`+data[0].isFolder+`
+|`+Boolean+`
+|폴더/파일 구분
+
+|===

@@ -9,7 +9,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 @Entity
@@ -25,10 +24,10 @@ public class Object {
     private Long id;
 
     @Column(unique = true)
-    private String fullName;
+    private String path;
 
     @Column
-    private String parentFullName;
+    private String parentPath;
 
     @Column
     private String name;

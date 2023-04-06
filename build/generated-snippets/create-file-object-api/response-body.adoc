@@ -1,0 +1,14 @@
+[source,options="nowrap"]
+----
+{
+  "name" : "testImage1.jpeg",
+  "path" : "testImage1.jpeg",
+  "bucketName" : "test-bucket",
+  "parentPath" : "",
+  "size" : 2.3,
+  "isFolder" : false,
+  "success" : true,
+  "code" : 0,
+  "msg" : "정상적으로 처리되었습니다."
+}
+----

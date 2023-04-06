@@ -12,10 +12,13 @@ import lombok.NoArgsConstructor;
 public class ObjectResponseDto {
 
     private String name;
-    private String fullName;
+    private String path;
     private String bucketName;
-    private String parentFullName;
+    private String parentPath;
     private Double size;
     private Boolean isFolder;
+    private boolean success;
+    private int code;
+    private String msg;
 
 }

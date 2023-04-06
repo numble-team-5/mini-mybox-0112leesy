@@ -8,4 +8,10 @@ public interface BucketService {
 
     public BucketResponseDto assignBucket(String username, String bucket);
 
+    public boolean isCapacityEnough(String bucketName, Double size);
+
+    public BucketResponseDto increaseCapacity(String bucketName, Double size);
+
+    public BucketResponseDto decreaseCapacity(String bucketName, Double size);
+
 }

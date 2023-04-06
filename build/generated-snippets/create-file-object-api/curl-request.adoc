@@ -1,0 +1,8 @@
+[source,bash]
+----
+$ curl 'http://api:8081/object-api/file' -i -X POST \
+    -H 'Content-Type: multipart/form-data;charset=UTF-8' \
+    -F 'multipartFile=@testImage1.jpeg;type=image/jpg' \
+    -F 'bucketName=test-bucket' \
+    -F 'parentPath='
+----
