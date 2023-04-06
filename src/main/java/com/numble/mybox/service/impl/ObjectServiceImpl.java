@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.numble.mybox.common.CommonResponse;
 import com.numble.mybox.data.dto.FileRequestDto;
 import com.numble.mybox.data.dto.ObjectRequestDto;
@@ -69,7 +70,7 @@ public class ObjectServiceImpl implements ObjectService {
         PutObjectRequest putObjectRequest = new PutObjectRequest(objectRequestDto.getBucketName(),
             path, new ByteArrayInputStream(new byte[0]), objectMetadata);
 
-        S3PutObject(putObjectRequest, objectRequestDto.getName());
+        S3PutObject(putObjectRequest, path);
 
         Object newFolder = Object.builder()
             .bucketName(objectRequestDto.getBucketName())
@@ -122,7 +123,7 @@ public class ObjectServiceImpl implements ObjectService {
         PutObjectRequest putObjectRequest = new PutObjectRequest(fileRequestDto.getBucketName(),
             path, multipartFile.getInputStream(), objectMetadata);
 
-        S3PutObject(putObjectRequest, fileName);
+        S3PutObject(putObjectRequest, path);
 
         bucketService.decreaseCapacity(fileRequestDto.getBucketName(), fileSizeMb);
 
@@ -140,10 +141,26 @@ public class ObjectServiceImpl implements ObjectService {
         return objectResponseDto;
     }
 
-    private void S3PutObject(PutObjectRequest putObjectRequest, String objectName) {
+    @Override
+    public boolean deleteFolder(ObjectRequestDto objectRequestDto) {
+        String folderPath = objectRequestDto.getParentPath() + objectRequestDto.getName();
+        S3deleteFolder(objectRequestDto.getBucketName(), folderPath);
+        objectRepository.deleteByBucketNameAndPath(objectRequestDto.getBucketName(), folderPath);
+        return true;
+    }
+
+    @Override
+    public boolean deleteFile(ObjectRequestDto objectRequestDto) {
+        String filePath = objectRequestDto.getParentPath() + objectRequestDto.getName();
+        S3deleteObject(objectRequestDto.getBucketName(), filePath);
+        objectRepository.deleteByBucketNameAndPath(objectRequestDto.getBucketName(), filePath);
+        return true;
+    }
+
+    private void S3PutObject(PutObjectRequest putObjectRequest, String path) {
         try {
             amazonS3.putObject(putObjectRequest);
-            System.out.format("Object %s has been created.\n", objectName);
+            System.out.format("Object %s has been created.\n", path);
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
         } catch (SdkClientException e) {
@@ -151,12 +168,31 @@ public class ObjectServiceImpl implements ObjectService {
         }
     }
 
-    private boolean doesPathExist(String bucketName, String path) {
-        List<Object> objectWithPath = objectRepository.findByBucketNameAndPath(bucketName, path);
-        if (objectWithPath.size() > 0) {
-            return true;
+    private void S3deleteFolder(String bucketName, String folderPath) {
+        List<S3ObjectSummary> fileList = amazonS3.listObjects(bucketName, folderPath).getObjectSummaries();
+        for (S3ObjectSummary file : fileList) {
+            S3deleteObject(bucketName, file.getKey());
         }
-        return false;
+        S3deleteObject(bucketName, folderPath);
+    }
+
+    private void S3deleteObject(String bucketName, String path) {
+        try {
+            amazonS3.deleteObject(bucketName, path);
+            System.out.format("Object %s has been deleted.\n", path);
+        } catch (AmazonS3Exception e) {
+            e.printStackTrace();
+        } catch(SdkClientException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean doesPathExist(String bucketName, String path) {
+        Object objectWithPath = objectRepository.findByBucketNameAndPath(bucketName, path);
+        if (objectWithPath == null) {
+            return false;
+        }
+        return true;
     }
 
     private ObjectResponseDto objectToObjectResponseDto(Object object) {

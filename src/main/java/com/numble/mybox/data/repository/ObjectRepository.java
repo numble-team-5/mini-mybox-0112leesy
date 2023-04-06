@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ObjectRepository extends JpaRepository<Object, Long> {
 
     List<Object> findByBucketNameAndParentPath(String bucketName, String parentPath);
-    List<Object> findByBucketNameAndPath(String bucketName, String path);
+    Object findByBucketNameAndPath(String bucketName, String path);
+    void deleteByBucketNameAndPath(String bucketName, String path);
 
 }

@@ -134,9 +134,9 @@ class ObjectServiceTest {
     void createFolderSuccessTest() {
         // given
         Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket", "depth-1/depth-2/"))
-            .thenReturn(new ArrayList());
+            .thenReturn(null);
         Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket", "depth-1/"))
-            .thenReturn(Lists.newArrayList(new Object()));
+            .thenReturn(new Object());
 
         ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
             .name("depth-2/")
@@ -179,7 +179,7 @@ class ObjectServiceTest {
             .build();
 
         Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket","root-folder/"))
-            .thenReturn(Lists.newArrayList(objectWithPath));
+            .thenReturn(objectWithPath);
 
         ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
             .name("root-folder/")
@@ -203,7 +203,7 @@ class ObjectServiceTest {
     void createTextFileTest() throws IOException {
         // given
         Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket","textFile.txt"))
-            .thenReturn(new ArrayList());
+            .thenReturn(null);
 
         MultipartFile multipartFile = Mockito.mock(MultipartFile.class);
         Mockito.when(multipartFile.getContentType()).thenReturn("text/plain");
@@ -249,9 +249,9 @@ class ObjectServiceTest {
     void createImageFileTest() throws IOException {
         // given
         Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket","depth-1/testImage1.jpeg"))
-            .thenReturn(new ArrayList());
+            .thenReturn(null);
         Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket", "depth-1/"))
-            .thenReturn(Lists.newArrayList(new Object()));
+            .thenReturn(new Object());
 
         String originalFilename = "testImage1.jpeg";
         MockMultipartFile file = new MockMultipartFile("multipartFile",
@@ -304,7 +304,7 @@ class ObjectServiceTest {
             .build();
 
         Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket","textFile.txt"))
-            .thenReturn(Lists.newArrayList(objectWithPath));
+            .thenReturn(objectWithPath);
 
         MultipartFile multipartFile = Mockito.mock(MultipartFile.class);
         Mockito.when(multipartFile.getContentType()).thenReturn("text/plain");
@@ -336,9 +336,9 @@ class ObjectServiceTest {
     void parentPathNotFoundTest() throws IOException {
         // given
         Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket", "depth-1/depth-2/"))
-            .thenReturn(new ArrayList());
+            .thenReturn(null);
         Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket", "depth-1/"))
-            .thenReturn(new ArrayList());
+            .thenReturn(null);
 
         ObjectRequestDto objectRequestDto = ObjectRequestDto.builder()
             .name("depth-2/")
@@ -363,7 +363,7 @@ class ObjectServiceTest {
     void capacityNotEnoughTest() throws IOException {
         // given
         Mockito.when(objectRepository.findByBucketNameAndPath("test-bucket","textFile.txt"))
-            .thenReturn(new ArrayList());
+            .thenReturn(null);
 
         MultipartFile multipartFile = Mockito.mock(MultipartFile.class);
         Mockito.when(multipartFile.getContentType()).thenReturn("text/plain");
