@@ -145,6 +145,9 @@ public class ObjectServiceImpl implements ObjectService {
     public boolean deleteFolder(ObjectRequestDto objectRequestDto) {
         String folderPath = objectRequestDto.getParentPath() + objectRequestDto.getName();
         S3deleteFolder(objectRequestDto.getBucketName(), folderPath);
+        Object folder = objectRepository.findByBucketNameAndPath(objectRequestDto.getBucketName(), folderPath);
+        bucketService.decreaseCapacity(objectRequestDto.getBucketName(), folder.getSize());
+        objectRepository.deleteByBucketNameAndParentPath(objectRequestDto.getBucketName(), folderPath);
         objectRepository.deleteByBucketNameAndPath(objectRequestDto.getBucketName(), folderPath);
         return true;
     }
@@ -153,6 +156,8 @@ public class ObjectServiceImpl implements ObjectService {
     public boolean deleteFile(ObjectRequestDto objectRequestDto) {
         String filePath = objectRequestDto.getParentPath() + objectRequestDto.getName();
         S3deleteObject(objectRequestDto.getBucketName(), filePath);
+        Object file = objectRepository.findByBucketNameAndPath(objectRequestDto.getBucketName(), filePath);
+        bucketService.decreaseCapacity(objectRequestDto.getBucketName(), file.getSize());
         objectRepository.deleteByBucketNameAndPath(objectRequestDto.getBucketName(), filePath);
         return true;
     }
