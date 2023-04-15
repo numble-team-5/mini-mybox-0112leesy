@@ -8,7 +8,7 @@ public interface StorageService {
 
     public List<Bucket> listBucket();
 
-    public void putBucket();
+    public String putBucket();
 
     public void deleteBucket();
 

@@ -9,10 +9,12 @@ import com.numble.mybox.data.entity.Bucket;
 import com.numble.mybox.service.StorageService;
 import java.util.List;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class StorageServiceImpl implements StorageService {
 
     private final AmazonS3 amazonS3;
@@ -29,20 +31,17 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void putBucket() {
+    public String putBucket() {
         String bucketName = UUID.randomUUID().toString();
         try {
             amazonS3.createBucket(bucketName);
-//            Bucket bucket = Bucket.builder()
-//                .bucketName(bucketName)
-//                .capacity(30.0)
-//                .build();
-            // LOGGER.info(String.format("Bucket [%s] has been created.\n", bucketName));
+            log.info("Bucket {} has been created.", bucketName);
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
         } catch (SdkClientException e) {
             e.printStackTrace();
         }
+        return bucketName;
     }
 
     @Override
@@ -59,7 +58,7 @@ public class StorageServiceImpl implements StorageService {
     public void putObject(PutObjectRequest putObjectRequest, String path) {
         try {
             amazonS3.putObject(putObjectRequest);
-            System.out.format("Object %s has been created.\n", path);
+            log.info("Object {} has been created.", path);
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
         } catch (SdkClientException e) {
@@ -90,7 +89,7 @@ public class StorageServiceImpl implements StorageService {
     public void deleteObject(String bucketName, String path) {
         try {
             amazonS3.deleteObject(bucketName, path);
-            System.out.format("Object %s has been deleted.\n", path);
+            log.info("Object {} has been deleted.", path);
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
         } catch(SdkClientException e) {
@@ -101,7 +100,7 @@ public class StorageServiceImpl implements StorageService {
     @Override
     public void errorIfBucketExists(String bucketName) throws RuntimeException {
         if (amazonS3.doesBucketExistV2(bucketName)) {
-            // LOGGER.info(String.format("Bucket [%s] already exists.\n", bucketName));
+            log.info("Bucket {} already exists.", bucketName);
             throw new RuntimeException();
         }
     }
@@ -109,7 +108,7 @@ public class StorageServiceImpl implements StorageService {
     @Override
     public void errorIfBucketNotExists(String bucketName) throws RuntimeException {
         if (!amazonS3.doesBucketExistV2(bucketName)) {
-            // LOGGER.info(String.format("Bucket [%s] doesn't exist.\n", bucketName));
+            log.info("Bucket {} doesn't exist.", bucketName);
             throw new RuntimeException();
         }
     }
