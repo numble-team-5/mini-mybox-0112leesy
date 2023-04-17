@@ -14,10 +14,12 @@ import com.numble.mybox.data.entity.Object;
 import com.numble.mybox.data.repository.ObjectRepository;
 import com.numble.mybox.service.BucketService;
 import com.numble.mybox.service.ObjectService;
+import com.numble.mybox.service.StorageService;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.text.Normalizer;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,18 +27,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
+@Slf4j
 public class ObjectServiceImpl implements ObjectService {
-
-    private final Logger LOGGER = LoggerFactory.getLogger(ObjectServiceImpl.class);
-    private final AmazonS3 amazonS3;
+    // private final AmazonS3 amazonS3;
+    private final StorageService storageService;
     private final BucketService bucketService;
     private final ObjectRepository objectRepository;
-    // private final JPAQueryFactory queryFactory;
 
     @Autowired
-    public ObjectServiceImpl(AmazonS3 amazonS3, BucketService bucketService,
+    public ObjectServiceImpl(StorageService storageService, BucketService bucketService,
         ObjectRepository objectRepository) {
-        this.amazonS3 = amazonS3;
+        this.storageService = storageService;
         this.bucketService = bucketService;
         this.objectRepository = objectRepository;
     }
@@ -70,7 +71,7 @@ public class ObjectServiceImpl implements ObjectService {
         PutObjectRequest putObjectRequest = new PutObjectRequest(objectRequestDto.getBucketName(),
             path, new ByteArrayInputStream(new byte[0]), objectMetadata);
 
-        S3PutObject(putObjectRequest, path);
+        storageService.putObject(putObjectRequest, path);
 
         Object newFolder = Object.builder()
             .bucketName(objectRequestDto.getBucketName())
@@ -123,7 +124,7 @@ public class ObjectServiceImpl implements ObjectService {
         PutObjectRequest putObjectRequest = new PutObjectRequest(fileRequestDto.getBucketName(),
             path, multipartFile.getInputStream(), objectMetadata);
 
-        S3PutObject(putObjectRequest, path);
+        storageService.putObject(putObjectRequest, path);
 
         bucketService.decreaseCapacity(fileRequestDto.getBucketName(), fileSizeMb);
 
@@ -144,7 +145,7 @@ public class ObjectServiceImpl implements ObjectService {
     @Override
     public boolean deleteFolder(ObjectRequestDto objectRequestDto) {
         String folderPath = objectRequestDto.getParentPath() + objectRequestDto.getName();
-        S3deleteFolder(objectRequestDto.getBucketName(), folderPath);
+        storageService.deleteFolder(objectRequestDto.getBucketName(), folderPath);
         Object folder = objectRepository.findByBucketNameAndPath(objectRequestDto.getBucketName(), folderPath);
         bucketService.decreaseCapacity(objectRequestDto.getBucketName(), folder.getSize());
         objectRepository.deleteByBucketNameAndParentPath(objectRequestDto.getBucketName(), folderPath);
@@ -155,41 +156,11 @@ public class ObjectServiceImpl implements ObjectService {
     @Override
     public boolean deleteFile(ObjectRequestDto objectRequestDto) {
         String filePath = objectRequestDto.getParentPath() + objectRequestDto.getName();
-        S3deleteObject(objectRequestDto.getBucketName(), filePath);
+        storageService.deleteObject(objectRequestDto.getBucketName(), filePath);
         Object file = objectRepository.findByBucketNameAndPath(objectRequestDto.getBucketName(), filePath);
         bucketService.decreaseCapacity(objectRequestDto.getBucketName(), file.getSize());
         objectRepository.deleteByBucketNameAndPath(objectRequestDto.getBucketName(), filePath);
         return true;
-    }
-
-    private void S3PutObject(PutObjectRequest putObjectRequest, String path) {
-        try {
-            amazonS3.putObject(putObjectRequest);
-            System.out.format("Object %s has been created.\n", path);
-        } catch (AmazonS3Exception e) {
-            e.printStackTrace();
-        } catch (SdkClientException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void S3deleteFolder(String bucketName, String folderPath) {
-        List<S3ObjectSummary> fileList = amazonS3.listObjects(bucketName, folderPath).getObjectSummaries();
-        for (S3ObjectSummary file : fileList) {
-            S3deleteObject(bucketName, file.getKey());
-        }
-        S3deleteObject(bucketName, folderPath);
-    }
-
-    private void S3deleteObject(String bucketName, String path) {
-        try {
-            amazonS3.deleteObject(bucketName, path);
-            System.out.format("Object %s has been deleted.\n", path);
-        } catch (AmazonS3Exception e) {
-            e.printStackTrace();
-        } catch(SdkClientException e) {
-            e.printStackTrace();
-        }
     }
 
     private boolean doesPathExist(String bucketName, String path) {
