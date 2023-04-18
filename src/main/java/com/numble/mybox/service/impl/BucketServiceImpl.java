@@ -25,7 +25,6 @@ public class BucketServiceImpl implements BucketService {
     @Override
     public String createBucket() throws RuntimeException {
         String bucketName = storageService.putBucket();
-        storageService.errorIfBucketExists(bucketName);
         Bucket bucket = Bucket.builder()
             .bucketName(bucketName)
             .capacity(30.0)

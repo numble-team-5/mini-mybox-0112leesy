@@ -12,6 +12,9 @@ import com.numble.mybox.data.dto.ObjectRequestDto;
 import com.numble.mybox.data.dto.ObjectResponseDto;
 import com.numble.mybox.data.entity.Object;
 import com.numble.mybox.data.repository.ObjectRepository;
+import com.numble.mybox.exception.CapacityNotEnoughException;
+import com.numble.mybox.exception.ObjectAlreadyExistsException;
+import com.numble.mybox.exception.ObjectNotFoundException;
 import com.numble.mybox.service.BucketService;
 import com.numble.mybox.service.ObjectService;
 import com.numble.mybox.service.StorageService;
@@ -29,7 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @Slf4j
 public class ObjectServiceImpl implements ObjectService {
-    // private final AmazonS3 amazonS3;
+
     private final StorageService storageService;
     private final BucketService bucketService;
     private final ObjectRepository objectRepository;
@@ -43,34 +46,26 @@ public class ObjectServiceImpl implements ObjectService {
     }
 
     @Override
-    public List<Object> getObjects(String bucketName, String parentPath) {
+    public List<Object> getObjects(String bucketName, String parentPath)
+        throws ObjectNotFoundException {
+        validateParentPath(bucketName, parentPath);
         List<Object> objects = objectRepository.findByBucketNameAndParentPath(bucketName,
             parentPath);
         return objects;
     }
 
     @Override
-    public ObjectResponseDto createFolder(ObjectRequestDto objectRequestDto) {
+    public ObjectResponseDto createFolder(ObjectRequestDto objectRequestDto)
+        throws ObjectAlreadyExistsException, ObjectNotFoundException {
         String path = objectRequestDto.getParentPath() + objectRequestDto.getName();
-        if (doesPathExist(objectRequestDto.getBucketName(), path)) {
-            ObjectResponseDto objectResponseDto = new ObjectResponseDto();
-            setDuplicatePathErrorResult(objectResponseDto);
-            return objectResponseDto;
-        }
-
-        if (!objectRequestDto.getParentPath().isEmpty() && !doesPathExist(
-            objectRequestDto.getBucketName(), objectRequestDto.getParentPath())) {
-            ObjectResponseDto objectResponseDto = new ObjectResponseDto();
-            setParentPathNotFoundResult(objectResponseDto);
-            return objectResponseDto;
-        }
+        validatePath(objectRequestDto.getBucketName(), path);
+        validateParentPath(objectRequestDto.getBucketName(), objectRequestDto.getParentPath());
 
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentLength(0L);
         objectMetadata.setContentType("application/x-directory");
         PutObjectRequest putObjectRequest = new PutObjectRequest(objectRequestDto.getBucketName(),
             path, new ByteArrayInputStream(new byte[0]), objectMetadata);
-
         storageService.putObject(putObjectRequest, path);
 
         Object newFolder = Object.builder()
@@ -81,51 +76,34 @@ public class ObjectServiceImpl implements ObjectService {
             .parentPath(objectRequestDto.getParentPath())
             .isFolder(true)
             .build();
-
         ObjectResponseDto objectResponseDto = objectToObjectResponseDto(
             objectRepository.save(newFolder));
-        setSuccessResult(objectResponseDto);
+        log.info("folder {} created in Bucket {}.", path, objectRequestDto.getBucketName());
+
         return objectResponseDto;
     }
 
     @Override
-    public ObjectResponseDto createFile(FileRequestDto fileRequestDto) throws IOException {
+    public ObjectResponseDto createFile(FileRequestDto fileRequestDto)
+        throws IOException, ObjectAlreadyExistsException, ObjectNotFoundException {
         MultipartFile multipartFile = fileRequestDto.getMultipartFile();
         String contentType = multipartFile.getContentType();
         String fileName = Normalizer.normalize(multipartFile.getOriginalFilename(),
             Normalizer.Form.NFC);
         String path = fileRequestDto.getParentPath() + fileName;
-
-        ObjectResponseDto objectResponseDto = new ObjectResponseDto();
-        if (doesPathExist(fileRequestDto.getBucketName(), path)) {
-            setDuplicatePathErrorResult(objectResponseDto);
-            return objectResponseDto;
-        }
-
-        if (!fileRequestDto.getParentPath().isEmpty() && !doesPathExist(
-            fileRequestDto.getBucketName(), fileRequestDto.getParentPath())) {
-            setParentPathNotFoundResult(objectResponseDto);
-            return objectResponseDto;
-        }
+        validatePath(fileRequestDto.getBucketName(), path);
+        validateParentPath(fileRequestDto.getBucketName(), fileRequestDto.getParentPath());
 
         ObjectMetadata objectMetadata = new ObjectMetadata();
         long fileSize = multipartFile.getSize();
-        System.out.format("Object %s has been created.\n", fileName);
         objectMetadata.setContentLength(fileSize);
         double fileSizeMb = fileSize / 1024.0 / 1024.0;
-        System.out.format("File size : %.2f mb\n", fileSizeMb);
         objectMetadata.setContentType(contentType);
-
-        if (!bucketService.isCapacityEnough(fileRequestDto.getBucketName(), fileSizeMb)) {
-            setCapacityNotEnoughResult(objectResponseDto);
-            return objectResponseDto;
-        }
+        validateCapacity(fileRequestDto.getBucketName(), fileSizeMb);
 
         PutObjectRequest putObjectRequest = new PutObjectRequest(fileRequestDto.getBucketName(),
             path, multipartFile.getInputStream(), objectMetadata);
-
         storageService.putObject(putObjectRequest, path);
-
         bucketService.decreaseCapacity(fileRequestDto.getBucketName(), fileSizeMb);
 
         Object newFile = Object.builder()
@@ -137,19 +115,27 @@ public class ObjectServiceImpl implements ObjectService {
             .isFolder(false)
             .build();
 
-        objectResponseDto = objectToObjectResponseDto(objectRepository.save(newFile));
-        setSuccessResult(objectResponseDto);
+        ObjectResponseDto objectResponseDto = objectToObjectResponseDto(
+            objectRepository.save(newFile));
+        log.info("Object {} (size: {}Mb)has been created in Bucket {}.", fileName, fileSizeMb,
+            fileRequestDto.getBucketName());
         return objectResponseDto;
     }
 
     @Override
-    public boolean deleteFolder(ObjectRequestDto objectRequestDto) {
+    public boolean deleteFolder(ObjectRequestDto objectRequestDto) throws ObjectNotFoundException {
         String folderPath = objectRequestDto.getParentPath() + objectRequestDto.getName();
+        validateParentPath(objectRequestDto.getBucketName(), folderPath);
         storageService.deleteFolder(objectRequestDto.getBucketName(), folderPath);
-        Object folder = objectRepository.findByBucketNameAndPath(objectRequestDto.getBucketName(), folderPath);
+        Object folder = objectRepository.findByBucketNameAndPath(objectRequestDto.getBucketName(),
+            folderPath);
         bucketService.decreaseCapacity(objectRequestDto.getBucketName(), folder.getSize());
-        objectRepository.deleteByBucketNameAndParentPath(objectRequestDto.getBucketName(), folderPath);
+        objectRepository.deleteByBucketNameAndParentPath(objectRequestDto.getBucketName(),
+            folderPath);
         objectRepository.deleteByBucketNameAndPath(objectRequestDto.getBucketName(), folderPath);
+        log.info("Folder {} (size: {}Mb)has been deleted in Bucket {}.", folderPath,
+            folder.getSize(),
+            objectRequestDto.getBucketName());
         return true;
     }
 
@@ -157,9 +143,12 @@ public class ObjectServiceImpl implements ObjectService {
     public boolean deleteFile(ObjectRequestDto objectRequestDto) {
         String filePath = objectRequestDto.getParentPath() + objectRequestDto.getName();
         storageService.deleteObject(objectRequestDto.getBucketName(), filePath);
-        Object file = objectRepository.findByBucketNameAndPath(objectRequestDto.getBucketName(), filePath);
+        Object file = objectRepository.findByBucketNameAndPath(objectRequestDto.getBucketName(),
+            filePath);
         bucketService.decreaseCapacity(objectRequestDto.getBucketName(), file.getSize());
         objectRepository.deleteByBucketNameAndPath(objectRequestDto.getBucketName(), filePath);
+        log.info("File {} (size: {}Mb)has been deleted in Bucket {}.", filePath, file.getSize(),
+            objectRequestDto.getBucketName());
         return true;
     }
 
@@ -184,28 +173,24 @@ public class ObjectServiceImpl implements ObjectService {
         return objectResponseDto;
     }
 
-    private void setSuccessResult(ObjectResponseDto result) {
-        result.setSuccess(true);
-        result.setCode(CommonResponse.SUCCESS.getCode());
-        result.setMsg("정상적으로 처리되었습니다.");
+    private void validatePath(String bucketName, String path) throws ObjectAlreadyExistsException {
+        if (doesPathExist(bucketName, path)) {
+            throw new ObjectAlreadyExistsException("이미 존재하는 파일 또는 폴더입니다.");
+        }
     }
 
-    private void setDuplicatePathErrorResult(ObjectResponseDto result) {
-        result.setSuccess(false);
-        result.setCode(CommonResponse.FAIL.getCode());
-        result.setMsg("이미 존재하는 파일 또는 폴더입니다.");
+    private void validateParentPath(String bucketName, String parentPath)
+        throws ObjectNotFoundException {
+        if (!parentPath.isEmpty() && !doesPathExist(bucketName, parentPath)) {
+            throw new ObjectNotFoundException("상위 폴더가 존재하지 않습니다.");
+        }
     }
 
-    private void setCapacityNotEnoughResult(ObjectResponseDto result) {
-        result.setSuccess(false);
-        result.setCode(CommonResponse.FAIL.getCode());
-        result.setMsg("사용 가능한 용량이 충분하지 않습니다.");
-    }
-
-    private void setParentPathNotFoundResult(ObjectResponseDto result) {
-        result.setSuccess(false);
-        result.setCode(CommonResponse.FAIL.getCode());
-        result.setMsg("상위 폴더가 존재하지 않습니다.");
+    private void validateCapacity(String bucketName, double fileSizeMb)
+        throws CapacityNotEnoughException {
+        if (!bucketService.isCapacityEnough(bucketName, fileSizeMb)) {
+            throw new CapacityNotEnoughException("사용 가능한 용량이 충분하지 않습니다.");
+        }
     }
 
 }
