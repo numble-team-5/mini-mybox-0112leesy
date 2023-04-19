@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.text.Normalizer;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class ObjectServiceImpl implements ObjectService {
 
@@ -37,17 +39,8 @@ public class ObjectServiceImpl implements ObjectService {
     private final BucketService bucketService;
     private final ObjectRepository objectRepository;
 
-    @Autowired
-    public ObjectServiceImpl(StorageService storageService, BucketService bucketService,
-        ObjectRepository objectRepository) {
-        this.storageService = storageService;
-        this.bucketService = bucketService;
-        this.objectRepository = objectRepository;
-    }
-
     @Override
-    public List<Object> getObjects(String bucketName, String parentPath)
-        throws ObjectNotFoundException {
+    public List<Object> getObjects(String bucketName, String parentPath) {
         validateParentPath(bucketName, parentPath);
         List<Object> objects = objectRepository.findByBucketNameAndParentPath(bucketName,
             parentPath);
@@ -55,8 +48,7 @@ public class ObjectServiceImpl implements ObjectService {
     }
 
     @Override
-    public ObjectResponseDto createFolder(ObjectRequestDto objectRequestDto)
-        throws ObjectAlreadyExistsException, ObjectNotFoundException {
+    public ObjectResponseDto createFolder(ObjectRequestDto objectRequestDto) {
         String path = objectRequestDto.getParentPath() + objectRequestDto.getName();
         validatePath(objectRequestDto.getBucketName(), path);
         validateParentPath(objectRequestDto.getBucketName(), objectRequestDto.getParentPath());
@@ -84,8 +76,7 @@ public class ObjectServiceImpl implements ObjectService {
     }
 
     @Override
-    public ObjectResponseDto createFile(FileRequestDto fileRequestDto)
-        throws IOException, ObjectAlreadyExistsException, ObjectNotFoundException {
+    public ObjectResponseDto createFile(FileRequestDto fileRequestDto) throws IOException {
         MultipartFile multipartFile = fileRequestDto.getMultipartFile();
         String contentType = multipartFile.getContentType();
         String fileName = Normalizer.normalize(multipartFile.getOriginalFilename(),
@@ -123,7 +114,7 @@ public class ObjectServiceImpl implements ObjectService {
     }
 
     @Override
-    public boolean deleteFolder(ObjectRequestDto objectRequestDto) throws ObjectNotFoundException {
+    public boolean deleteFolder(ObjectRequestDto objectRequestDto) {
         String folderPath = objectRequestDto.getParentPath() + objectRequestDto.getName();
         validateParentPath(objectRequestDto.getBucketName(), folderPath);
         storageService.deleteFolder(objectRequestDto.getBucketName(), folderPath);
