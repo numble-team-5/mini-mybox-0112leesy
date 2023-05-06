@@ -6,6 +6,7 @@ import com.numble.mybox.data.dto.SignInResultDto;
 import com.numble.mybox.data.dto.SignUpResultDto;
 import com.numble.mybox.data.entity.User;
 import com.numble.mybox.data.repository.UserRepository;
+import com.numble.mybox.service.BucketService;
 import com.numble.mybox.service.SignService;
 import java.util.Collections;
 import org.slf4j.Logger;
@@ -19,16 +20,18 @@ public class SignServiceImpl implements SignService {
 
     private final Logger LOGGER = LoggerFactory.getLogger(SignServiceImpl.class);
 
-    public UserRepository userRepository;
-    public JwtTokenProvider jwtTokenProvider;
-    public PasswordEncoder passwordEncoder;
+    public final UserRepository userRepository;
+    public final BucketService bucketService;
+    public final JwtTokenProvider jwtTokenProvider;
+    public final PasswordEncoder passwordEncoder;
 
     @Autowired
     public SignServiceImpl(UserRepository userRepository, JwtTokenProvider jwtTokenProvider,
-        PasswordEncoder passwordEncoder) {
+        PasswordEncoder passwordEncoder, BucketService bucketService) {
         this.userRepository = userRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
+        this.bucketService = bucketService;
     }
 
 
@@ -54,6 +57,8 @@ public class SignServiceImpl implements SignService {
         }
 
         User savedUser = userRepository.save(user);
+        bucketService.assignBucket(username, bucketService.createBucket());
+
         SignUpResultDto signUpResultDto = new SignUpResultDto();
 
         LOGGER.info("[getSignUpResult] userEntity 값이 들어왔는지 확인 후 결과값 주입");

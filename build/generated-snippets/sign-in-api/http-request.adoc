@@ -1,0 +1,6 @@
+[source,http,options="nowrap"]
+----
+POST /sign-api/sign-in?username=test-username&password=test-password HTTP/1.1
+Host: api:8081
+
+----

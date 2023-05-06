@@ -1,0 +1,9 @@
+[source,bash]
+----
+$ curl 'http://api:8081/api/test/rest_docs' -i -X POST \
+    -H 'Content-Type: application/json;charset=UTF-8' \
+    -d '{
+  "pw" : "testPw",
+  "id" : "testId"
+}'
+----

@@ -1,0 +1,4 @@
+[source,bash]
+----
+$ http POST 'http://api:8081/bucket-api/bucket?username=test-user'
+----

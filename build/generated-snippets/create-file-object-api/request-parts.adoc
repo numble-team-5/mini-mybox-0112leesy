@@ -1,0 +1,7 @@
+|===
+|Part|Description
+
+|`+multipartFile+`
+|이미지 파일
+
+|===

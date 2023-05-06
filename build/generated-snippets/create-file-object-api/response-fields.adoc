@@ -1,0 +1,40 @@
+|===
+|Path|Type|Description
+
+|`+name+`
+|`+String+`
+|파일 이름
+
+|`+parentPath+`
+|`+String+`
+|상위 폴더 경로
+
+|`+path+`
+|`+String+`
+|경로
+
+|`+bucketName+`
+|`+String+`
+|버킷 이름
+
+|`+size+`
+|`+Number+`
+|용량
+
+|`+isFolder+`
+|`+Boolean+`
+|폴더 여부
+
+|`+success+`
+|`+Boolean+`
+|성공여부
+
+|`+code+`
+|`+Number+`
+|코드
+
+|`+msg+`
+|`+String+`
+|메시지
+
+|===

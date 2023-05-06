@@ -1,0 +1,8 @@
+[source,http,options="nowrap"]
+----
+POST /object-api/folder HTTP/1.1
+Host: api:8081
+Content-Type: application/x-www-form-urlencoded
+
+name=folder-depth-2%2F&parentPath=folder-depth-1%2F&bucketName=test-bucket
+----

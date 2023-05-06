@@ -1,0 +1,6 @@
+[source,http,options="nowrap"]
+----
+POST /sign-api/sign-up?username=test-username&password=test-password&email=test-email&role=user HTTP/1.1
+Host: api:8081
+
+----

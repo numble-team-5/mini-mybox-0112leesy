@@ -136,7 +136,8 @@ public class S3Tests {
     }
 
     @Test
-    public void getAllObjectTest() {
+    public void
+    getAllObjectTest() {
         // list all in the bucket
         try {
             ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
@@ -172,6 +173,7 @@ public class S3Tests {
             ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
                 .withBucketName(bucketName)
                 .withDelimiter("/")
+                .withPrefix(null)
                 .withMaxKeys(300);
 
             ObjectListing objectListing = s3.listObjects(listObjectsRequest);
@@ -236,7 +238,7 @@ public class S3Tests {
     @Test
     public void uploadTextFileTest() {
         // upload local file
-        String objectName = "sample-object.txt";
+        String objectName = "sample-folder/sample-object.txt";
         String filePath = "C:\\Users\\LGgram\\Desktop\\test1.txt";
 
         try {
@@ -253,7 +255,7 @@ public class S3Tests {
     public void uploadImageFileTest() {
         // upload local file
         // if the file already exists, it is overwritten
-        String objectName = "sample-image-object.jpg";
+        String objectName = "new-folder-1/new-folder-2/sample-image-object.jpg";
         String filePath = "C:\\Users\\LGgram\\Desktop\\testImage1.jpeg";
 
         try {
@@ -352,6 +354,16 @@ public class S3Tests {
         } catch(SdkClientException e) {
             e.printStackTrace();
         }
+    }
+
+    @Test
+    public void deleteFolderTest() {
+        String folderPath = "new-folder-1/";
+        List<S3ObjectSummary> fileList = s3.listObjects(bucketName, folderPath).getObjectSummaries();
+        for (S3ObjectSummary file : fileList) {
+            s3.deleteObject(bucketName, file.getKey());
+        }
+        s3.deleteObject(bucketName, folderPath);
     }
 
 }

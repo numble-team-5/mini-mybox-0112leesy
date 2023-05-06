@@ -1,0 +1,16 @@
+|===
+|Path|Type|Description
+
+|`+username+`
+|`+String+`
+|아이디
+
+|`+bucketName+`
+|`+String+`
+|버킷이름
+
+|`+remain+`
+|`+Number+`
+|남은용량
+
+|===

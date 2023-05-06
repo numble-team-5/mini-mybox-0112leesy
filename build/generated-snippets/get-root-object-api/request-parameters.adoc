@@ -1,0 +1,10 @@
+|===
+|Parameter|Description
+
+|`+bucketName+`
+|버킷 이름
+
+|`+parentFullName+`
+|상위 폴더 경로
+
+|===
