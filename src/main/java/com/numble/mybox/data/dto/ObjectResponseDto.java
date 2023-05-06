@@ -17,8 +17,5 @@ public class ObjectResponseDto {
     private String parentPath;
     private Double size;
     private Boolean isFolder;
-    private boolean success;
-    private int code;
-    private String msg;
 
 }

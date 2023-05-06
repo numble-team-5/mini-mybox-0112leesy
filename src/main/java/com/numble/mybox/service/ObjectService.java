@@ -15,4 +15,8 @@ public interface ObjectService {
 
     public ObjectResponseDto createFile(FileRequestDto fileRequestDto) throws IOException;
 
+    public boolean deleteFolder(ObjectRequestDto objectRequestDto);
+
+    public boolean deleteFile(ObjectRequestDto objectRequestDto);
+
 }

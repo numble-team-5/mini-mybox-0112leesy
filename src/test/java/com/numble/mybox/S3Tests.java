@@ -255,7 +255,7 @@ public class S3Tests {
     public void uploadImageFileTest() {
         // upload local file
         // if the file already exists, it is overwritten
-        String objectName = "sample-image-object.jpg";
+        String objectName = "new-folder-1/new-folder-2/sample-image-object.jpg";
         String filePath = "C:\\Users\\LGgram\\Desktop\\testImage1.jpeg";
 
         try {
@@ -354,6 +354,16 @@ public class S3Tests {
         } catch(SdkClientException e) {
             e.printStackTrace();
         }
+    }
+
+    @Test
+    public void deleteFolderTest() {
+        String folderPath = "new-folder-1/";
+        List<S3ObjectSummary> fileList = s3.listObjects(bucketName, folderPath).getObjectSummaries();
+        for (S3ObjectSummary file : fileList) {
+            s3.deleteObject(bucketName, file.getKey());
+        }
+        s3.deleteObject(bucketName, folderPath);
     }
 
 }

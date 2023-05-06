@@ -34,6 +34,7 @@ public class SecurityConfiguration {
             .antMatchers("/api/for-admin").hasRole("ADMIN")
             .antMatchers("/sign-api/sign-in", "/sign-api/sign-up", "/sign-api/exception").permitAll()
             .antMatchers("**exception**").permitAll()
+            .antMatchers("/**").permitAll()
             // .anyRequest().hasRole("USER")
             // .anyRequest().authenticated()
 

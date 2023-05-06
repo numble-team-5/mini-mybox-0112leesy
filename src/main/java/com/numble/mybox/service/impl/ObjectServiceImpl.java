@@ -5,18 +5,25 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.numble.mybox.common.CommonResponse;
 import com.numble.mybox.data.dto.FileRequestDto;
 import com.numble.mybox.data.dto.ObjectRequestDto;
 import com.numble.mybox.data.dto.ObjectResponseDto;
 import com.numble.mybox.data.entity.Object;
 import com.numble.mybox.data.repository.ObjectRepository;
+import com.numble.mybox.exception.CapacityNotEnoughException;
+import com.numble.mybox.exception.ObjectAlreadyExistsException;
+import com.numble.mybox.exception.ObjectNotFoundException;
 import com.numble.mybox.service.BucketService;
 import com.numble.mybox.service.ObjectService;
+import com.numble.mybox.service.StorageService;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.text.Normalizer;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,24 +31,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ObjectServiceImpl implements ObjectService {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(ObjectServiceImpl.class);
-    private final AmazonS3 amazonS3;
+    private final StorageService storageService;
     private final BucketService bucketService;
     private final ObjectRepository objectRepository;
-    // private final JPAQueryFactory queryFactory;
-
-    @Autowired
-    public ObjectServiceImpl(AmazonS3 amazonS3, BucketService bucketService,
-        ObjectRepository objectRepository) {
-        this.amazonS3 = amazonS3;
-        this.bucketService = bucketService;
-        this.objectRepository = objectRepository;
-    }
 
     @Override
     public List<Object> getObjects(String bucketName, String parentPath) {
+        validateParentPath(bucketName, parentPath);
         List<Object> objects = objectRepository.findByBucketNameAndParentPath(bucketName,
             parentPath);
         return objects;
@@ -50,26 +50,15 @@ public class ObjectServiceImpl implements ObjectService {
     @Override
     public ObjectResponseDto createFolder(ObjectRequestDto objectRequestDto) {
         String path = objectRequestDto.getParentPath() + objectRequestDto.getName();
-        if (doesPathExist(objectRequestDto.getBucketName(), path)) {
-            ObjectResponseDto objectResponseDto = new ObjectResponseDto();
-            setDuplicatePathErrorResult(objectResponseDto);
-            return objectResponseDto;
-        }
-
-        if (!objectRequestDto.getParentPath().isEmpty() && !doesPathExist(
-            objectRequestDto.getBucketName(), objectRequestDto.getParentPath())) {
-            ObjectResponseDto objectResponseDto = new ObjectResponseDto();
-            setParentPathNotFoundResult(objectResponseDto);
-            return objectResponseDto;
-        }
+        validatePath(objectRequestDto.getBucketName(), path);
+        validateParentPath(objectRequestDto.getBucketName(), objectRequestDto.getParentPath());
 
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentLength(0L);
         objectMetadata.setContentType("application/x-directory");
         PutObjectRequest putObjectRequest = new PutObjectRequest(objectRequestDto.getBucketName(),
             path, new ByteArrayInputStream(new byte[0]), objectMetadata);
-
-        S3PutObject(putObjectRequest, objectRequestDto.getName());
+        storageService.putObject(putObjectRequest, path);
 
         Object newFolder = Object.builder()
             .bucketName(objectRequestDto.getBucketName())
@@ -79,10 +68,10 @@ public class ObjectServiceImpl implements ObjectService {
             .parentPath(objectRequestDto.getParentPath())
             .isFolder(true)
             .build();
-
         ObjectResponseDto objectResponseDto = objectToObjectResponseDto(
             objectRepository.save(newFolder));
-        setSuccessResult(objectResponseDto);
+        log.info("folder {} created in Bucket {}.", path, objectRequestDto.getBucketName());
+
         return objectResponseDto;
     }
 
@@ -93,37 +82,19 @@ public class ObjectServiceImpl implements ObjectService {
         String fileName = Normalizer.normalize(multipartFile.getOriginalFilename(),
             Normalizer.Form.NFC);
         String path = fileRequestDto.getParentPath() + fileName;
-
-        ObjectResponseDto objectResponseDto = new ObjectResponseDto();
-        if (doesPathExist(fileRequestDto.getBucketName(), path)) {
-            setDuplicatePathErrorResult(objectResponseDto);
-            return objectResponseDto;
-        }
-
-        if (!fileRequestDto.getParentPath().isEmpty() && !doesPathExist(
-            fileRequestDto.getBucketName(), fileRequestDto.getParentPath())) {
-            setParentPathNotFoundResult(objectResponseDto);
-            return objectResponseDto;
-        }
+        validatePath(fileRequestDto.getBucketName(), path);
+        validateParentPath(fileRequestDto.getBucketName(), fileRequestDto.getParentPath());
 
         ObjectMetadata objectMetadata = new ObjectMetadata();
         long fileSize = multipartFile.getSize();
-        System.out.format("Object %s has been created.\n", fileName);
         objectMetadata.setContentLength(fileSize);
         double fileSizeMb = fileSize / 1024.0 / 1024.0;
-        System.out.format("File size : %.2f mb\n", fileSizeMb);
         objectMetadata.setContentType(contentType);
-
-        if (!bucketService.isCapacityEnough(fileRequestDto.getBucketName(), fileSizeMb)) {
-            setCapacityNotEnoughResult(objectResponseDto);
-            return objectResponseDto;
-        }
+        validateCapacity(fileRequestDto.getBucketName(), fileSizeMb);
 
         PutObjectRequest putObjectRequest = new PutObjectRequest(fileRequestDto.getBucketName(),
             path, multipartFile.getInputStream(), objectMetadata);
-
-        S3PutObject(putObjectRequest, fileName);
-
+        storageService.putObject(putObjectRequest, path);
         bucketService.decreaseCapacity(fileRequestDto.getBucketName(), fileSizeMb);
 
         Object newFile = Object.builder()
@@ -135,28 +106,49 @@ public class ObjectServiceImpl implements ObjectService {
             .isFolder(false)
             .build();
 
-        objectResponseDto = objectToObjectResponseDto(objectRepository.save(newFile));
-        setSuccessResult(objectResponseDto);
+        ObjectResponseDto objectResponseDto = objectToObjectResponseDto(
+            objectRepository.save(newFile));
+        log.info("Object {} (size: {}Mb)has been created in Bucket {}.", fileName, fileSizeMb,
+            fileRequestDto.getBucketName());
         return objectResponseDto;
     }
 
-    private void S3PutObject(PutObjectRequest putObjectRequest, String objectName) {
-        try {
-            amazonS3.putObject(putObjectRequest);
-            System.out.format("Object %s has been created.\n", objectName);
-        } catch (AmazonS3Exception e) {
-            e.printStackTrace();
-        } catch (SdkClientException e) {
-            e.printStackTrace();
-        }
+    @Override
+    public boolean deleteFolder(ObjectRequestDto objectRequestDto) {
+        String folderPath = objectRequestDto.getParentPath() + objectRequestDto.getName();
+        validateParentPath(objectRequestDto.getBucketName(), folderPath);
+        storageService.deleteFolder(objectRequestDto.getBucketName(), folderPath);
+        Object folder = objectRepository.findByBucketNameAndPath(objectRequestDto.getBucketName(),
+            folderPath);
+        bucketService.decreaseCapacity(objectRequestDto.getBucketName(), folder.getSize());
+        objectRepository.deleteByBucketNameAndParentPath(objectRequestDto.getBucketName(),
+            folderPath);
+        objectRepository.deleteByBucketNameAndPath(objectRequestDto.getBucketName(), folderPath);
+        log.info("Folder {} (size: {}Mb)has been deleted in Bucket {}.", folderPath,
+            folder.getSize(),
+            objectRequestDto.getBucketName());
+        return true;
+    }
+
+    @Override
+    public boolean deleteFile(ObjectRequestDto objectRequestDto) {
+        String filePath = objectRequestDto.getParentPath() + objectRequestDto.getName();
+        storageService.deleteObject(objectRequestDto.getBucketName(), filePath);
+        Object file = objectRepository.findByBucketNameAndPath(objectRequestDto.getBucketName(),
+            filePath);
+        bucketService.decreaseCapacity(objectRequestDto.getBucketName(), file.getSize());
+        objectRepository.deleteByBucketNameAndPath(objectRequestDto.getBucketName(), filePath);
+        log.info("File {} (size: {}Mb)has been deleted in Bucket {}.", filePath, file.getSize(),
+            objectRequestDto.getBucketName());
+        return true;
     }
 
     private boolean doesPathExist(String bucketName, String path) {
-        List<Object> objectWithPath = objectRepository.findByBucketNameAndPath(bucketName, path);
-        if (objectWithPath.size() > 0) {
-            return true;
+        Object objectWithPath = objectRepository.findByBucketNameAndPath(bucketName, path);
+        if (objectWithPath == null) {
+            return false;
         }
-        return false;
+        return true;
     }
 
     private ObjectResponseDto objectToObjectResponseDto(Object object) {
@@ -172,28 +164,24 @@ public class ObjectServiceImpl implements ObjectService {
         return objectResponseDto;
     }
 
-    private void setSuccessResult(ObjectResponseDto result) {
-        result.setSuccess(true);
-        result.setCode(CommonResponse.SUCCESS.getCode());
-        result.setMsg("정상적으로 처리되었습니다.");
+    private void validatePath(String bucketName, String path) throws ObjectAlreadyExistsException {
+        if (doesPathExist(bucketName, path)) {
+            throw new ObjectAlreadyExistsException("이미 존재하는 파일 또는 폴더입니다.");
+        }
     }
 
-    private void setDuplicatePathErrorResult(ObjectResponseDto result) {
-        result.setSuccess(false);
-        result.setCode(CommonResponse.FAIL.getCode());
-        result.setMsg("이미 존재하는 파일 또는 폴더입니다.");
+    private void validateParentPath(String bucketName, String parentPath)
+        throws ObjectNotFoundException {
+        if (!parentPath.isEmpty() && !doesPathExist(bucketName, parentPath)) {
+            throw new ObjectNotFoundException("상위 폴더가 존재하지 않습니다.");
+        }
     }
 
-    private void setCapacityNotEnoughResult(ObjectResponseDto result) {
-        result.setSuccess(false);
-        result.setCode(CommonResponse.FAIL.getCode());
-        result.setMsg("사용 가능한 용량이 충분하지 않습니다.");
-    }
-
-    private void setParentPathNotFoundResult(ObjectResponseDto result) {
-        result.setSuccess(false);
-        result.setCode(CommonResponse.FAIL.getCode());
-        result.setMsg("상위 폴더가 존재하지 않습니다.");
+    private void validateCapacity(String bucketName, double fileSizeMb)
+        throws CapacityNotEnoughException {
+        if (!bucketService.isCapacityEnough(bucketName, fileSizeMb)) {
+            throw new CapacityNotEnoughException("사용 가능한 용량이 충분하지 않습니다.");
+        }
     }
 
 }
